@@ -191,10 +191,11 @@ exports.resolveTreeGreedy = resolveTreeGreedy
 
 exports.db = function (db, config) {
   db.methods.resolve = {type: 'async'}
-  db.resolve = function (module, vrange, opts, cb) {
+  db.resolve = function (module, opts, cb) {
     if(!cb) cb = opts, opts = {}
+    var parts = module.split('@')
     resolve(
-      db.sublevel('ver'), module, vrange,
+      db.sublevel('ver'), parts[0], parts[1] || '*',
       { greedy: opts.greedy || config.greedy },
       cb
     )
@@ -206,10 +207,7 @@ exports.commands = function (db) {
     if(!config._.length)
       return cb(new Error('expect module@version? argument'))
 
-    var module = config._[0]
-    var parts = module.split('@')
-    
-    db.resolve(parts[0], parts[1] || '*',
+    db.resolve(config._[0],
     {greedy: config.greedy}, 
     function (err, tree) {
       if(err) return cb(err)
