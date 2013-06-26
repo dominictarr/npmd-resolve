@@ -28,7 +28,7 @@ var urlResolve = require('npmd-git-resolve')
 //but when the cache is warm it's only 50 ms!
 
 
-function resolve (db, module, vrange, cb) {
+function resolvePackage (db, module, vrange, cb) {
   if(!cb) cb = vrange, vrange = '*'
 
   if(/^(git|http)/.test(vrange)) {
@@ -58,6 +58,7 @@ function resolve (db, module, vrange, cb) {
   }
 
   peek.last(db, r, function (err, key, pkg) {
+    if(err) return cb(err)
     if(!semver.satisfies(pkg.version, vrange))
       return cb(new Error(module+'@'+pkg.version +'><'+ vrange))
     cb(err, pkg)
@@ -97,7 +98,7 @@ function clean (t) {
 
 function resolveTree (db, module, version, cb) {
 
-  resolve(db, module, version, function (err, pkg) {
+  resolvePackage(db, module, version, function (err, pkg) {
     cat([pull.values([pkg]),
       pull.depthFirst(pkg, function (pkg) {
         var deps = pkg.dependencies || {}
@@ -110,7 +111,7 @@ function resolveTree (db, module, version, cb) {
             if(check(pkg, name, deps[name]))
               return cb()
 
-            resolve(db, name, deps[name], cb)
+            resolvePackage(db, name, deps[name], cb)
           }, 10))
     
           .pipe(pull.filter(function (_pkg) {
@@ -129,7 +130,7 @@ function resolveTree (db, module, version, cb) {
 
 function resolveTreeGreedy (db, module, version, cb) {
 
-  resolve(db, module, version, function (err, pkg) {
+  resolvePackage(db, module, version, function (err, pkg) {
     var root = pkg
  
     cat([pull.values([pkg]),
@@ -144,7 +145,7 @@ function resolveTreeGreedy (db, module, version, cb) {
           if(check(pkg, name, deps[name]))
             return cb()
  
-         resolve(db, name, deps[name], function (err, _pkg) {
+         resolvePackage(db, name, deps[name], function (err, _pkg) {
             cb(null, _pkg)
           })
         }))
@@ -175,7 +176,8 @@ function resolveTreeGreedy (db, module, version, cb) {
   })
 }
 
-exports = module.exports = function (db, module, version, opts, cb) {
+var resolve = exports = module.exports = 
+function (db, module, version, opts, cb) {
   if(!cb)
     cb = opts, opts = {}
     if(opts && opts.greedy)
