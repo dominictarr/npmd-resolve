@@ -12,7 +12,8 @@
     "semver": "~2.0.8",
     "level-peek": "~1.0.6",
     "pull-stream": "~2.20.0",
-    "npmd-git-resolve": "~2.0.3"
+    "npmd-git-resolve": "~2.0.3",
+    "pull-cat": "~1.1.4"
   },
   "devDependencies": {},
   "scripts": {
