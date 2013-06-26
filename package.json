@@ -1,0 +1,23 @@
+{
+  "name": "npmd-resolve",
+  "description": "",
+  "version": "0.0.0",
+  "homepage": "https://github.com/dominictarr/npmd-resolve",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dominictarr/npmd-resolve.git"
+  },
+  "dependencies": {
+    "padded-semver": "~1.1.1",
+    "semver": "~2.0.8",
+    "level-peek": "~1.0.6",
+    "pull-stream": "~2.20.0",
+    "npmd-git-resolve": "~2.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "set -e; for t in test/*.js; do node $t; done"
+  },
+  "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
+  "license": "MIT"
+}
