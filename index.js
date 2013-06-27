@@ -85,6 +85,7 @@ function clean (t) {
   delete t.parent
   delete t.time
   delete t.size
+  delete t.dependencies
 
   for(var k in _deps) {
     _deps[k].from = deps[k]
@@ -99,7 +100,8 @@ function clean (t) {
 function resolveTree (db, module, version, cb) {
 
   resolvePackage(db, module, version, function (err, pkg) {
-    cat([pull.values([pkg]),
+    cat([
+      pull.values([pkg]),
       pull.depthFirst(pkg, function (pkg) {
         var deps = pkg.dependencies || {}
         pkg.tree = {}
@@ -120,8 +122,8 @@ function resolveTree (db, module, version, cb) {
             pkg.tree[_pkg.name] = _pkg
             return pkg
           }))
-      })]
-    )
+      })
+    ])
     .pipe(pull.drain(null, function () {
       cb(null, clean(pkg))
     }))
@@ -133,43 +135,45 @@ function resolveTreeGreedy (db, module, version, cb) {
   resolvePackage(db, module, version, function (err, pkg) {
     var root = pkg
  
-    cat([pull.values([pkg]),
-    pull.depthFirst(pkg, function (pkg) {
-      var deps = pkg.dependencies || {}
-      pkg.tree = {}
-      return pull.values(Object.keys(deps))
-        .pipe(pull.asyncMap(function (name, cb) {
-          //check if there is already a module that resolves this...
+    return cat([
+      pull.values([pkg]),
+      pull.depthFirst(pkg, function (pkg) {
+        var deps = pkg.dependencies || {}
+        pkg.tree = {}
+        return pull.values(Object.keys(deps))
+          .pipe(pull.asyncMap(function (name, cb) {
+            //check if there is already a module that resolves this...
 
-          //filter out versions that we already have.
-          if(check(pkg, name, deps[name]))
-            return cb()
+            //filter out versions that we already have.
+            if(check(pkg, name, deps[name]))
+              return cb()
  
-         resolvePackage(db, name, deps[name], function (err, _pkg) {
-            cb(null, _pkg)
-          })
-        }))
+           resolvePackage(db, name, deps[name], function (err, _pkg) {
+              cb(null, _pkg)
+            })
+          }))
     
-        .pipe(pull.filter(function (_pkg) {
-          if(!_pkg) return
-          //install non-conflicting modules as low in the tree as possible.
-          //hmm, is this wrong?
-          //hmm, the only way a module is not on the root is if it's
-          //conflicting with one that is already there.
-          //so, what if this module is a child of a conflicting module
-          //aha! we have already checked the path to the root,
-          //and this item would be filtered if it wasn't clear.
-          if(!root.tree[_pkg.name]) {
-            root.tree[_pkg.name] = _pkg
-            _pkg.parent = root
-          }
-          else {
-            _pkg.parent = pkg
-            pkg.tree[_pkg.name] = _pkg
-          }
-          return pkg
-        }))
-    })])
+          .pipe(pull.filter(function (_pkg) {
+            if(!_pkg) return
+            //install non-conflicting modules as low in the tree as possible.
+            //hmm, is this wrong?
+            //hmm, the only way a module is not on the root is if it's
+            //conflicting with one that is already there.
+            //so, what if this module is a child of a conflicting module
+            //aha! we have already checked the path to the root,
+            //and this item would be filtered if it wasn't clear.
+            if(!root.tree[_pkg.name]) {
+              root.tree[_pkg.name] = _pkg
+              _pkg.parent = root
+            }
+            else {
+              _pkg.parent = pkg
+              pkg.tree[_pkg.name] = _pkg
+            }
+            return pkg
+          }))
+      })
+    ])
     .pipe(pull.drain(null, function () {
       cb(null, clean(pkg))
     }))
