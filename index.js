@@ -74,31 +74,6 @@ function check(pkg, name, range) {
   return check(pkg.parent, name, range)
 }
 
-function clean (t) {
-  var deps = t.dependencies
-  var _deps = t.tree || {}
-
-  delete t.tree
-  delete t._parent
-  delete t.description
-  delete t.devDependencies
-  delete t.tree
-  delete t.scripts
-  delete t.parent
-  delete t.time
-  delete t.size
-  delete t.dependencies
-
-  for(var k in _deps) {
-    _deps[k].from = deps[k]
-    clean(_deps[k])
-  }
-
-  t.dependencies = _deps
-
-  return t
-}
-
 function resolveTree (db, module, opts, cb) {
   var parts = module.split('@')
   var name = parts.shift()
@@ -112,7 +87,6 @@ function resolveTree (db, module, opts, cb) {
     var root = pkg
 
     if(opts.available) {
-      console.log(Object.keys(opts.available))
       root.parent = {tree: opts.available}
     }
 
@@ -143,7 +117,7 @@ function resolveTree (db, module, opts, cb) {
       })
     ]),
     pull.drain(null, function () {
-      cb(null, clean(pkg))
+      cb(null, tree.clean(pkg))
     }))
   })
   
@@ -203,24 +177,43 @@ exports.db = function (db, config) {
 exports.cli = function (db) {
   db.commands.push(function (db, config, cb) {
     var args = config._.slice()
-    if('resolve' !== args.shift()) return
+    var cmd = args.shift()
+  
+    if(cmd === 'resolve') {
+      if(!args.length)
+        return cb(new Error('expect module@version? argument')), true
 
-    if(!args.length)
-      return cb(new Error('expect module@version? argument')), true
-
-    tree.ls(function (err, tree) {
-      db.resolve(args.shift(),
-      { 
-        greedy: config.greedy, 
-        available: tree
-      }, 
-      function (err, tree) {
-        if(err) return cb(err)
-        console.log(JSON.stringify(tree, null, 2))
-        cb(null, tree)
+      tree.ls(function (err, tree) {
+        db.resolve(args.shift(),
+        { 
+          greedy: config.greedy, 
+          available: tree
+        }, 
+        function (err, tree) {
+          if(err) return cb(err)
+          console.log(JSON.stringify(tree, null, 2))
+          cb(null, tree)
+        })
       })
-    })
+    }
+    else if(cmd == 'tree') {
+      tree.tree(config.installPath, function (err, tree) {
+        if(err) throw err
+        console.log(JSON.stringify(tree, null, 2))
+        cb()
+      })
+    }
+    else if(cmd == 'ls')
+      tree.ls(config.installPath, function (err, tree) {
+        if(err) throw err
+        console.log(JSON.stringify(tree, null, 2))
+        cb()
+      })
+    else
+      return
+
     return true
   })
+
 }
 
