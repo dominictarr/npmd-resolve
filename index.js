@@ -206,12 +206,15 @@ exports.db = function (db, config) {
   }
 }
 
-exports.commands = function (db) {
-  db.commands.resolve = function (config, cb) {
-    if(!config._.length)
+exports.cli = function (db) {
+  db.commands.push(function (config, cb) {
+    var args = config._.slice()
+    if('resolve' !== args.shift()) return
+
+    if(!args.length)
       return cb(new Error('expect module@version? argument'))
 
-    db.resolve(config._[0],
+    db.resolve(args,
     {greedy: config.greedy}, 
     function (err, tree) {
       if(err) return cb(err)
