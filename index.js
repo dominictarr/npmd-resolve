@@ -6,6 +6,7 @@ var inspect = require('util').inspect
 var semver  = require('semver')
 var cat     = require('pull-cat')
 var urlResolve = require('npmd-git-resolve')
+var tree    = require('./tree')
 
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
@@ -28,12 +29,13 @@ var urlResolve = require('npmd-git-resolve')
 //but when the cache is warm it's only 50 ms!
 
 
-function resolvePackage (db, module, vrange, cb) {
+function resolvePackage (db, module, vrange, opts, cb) {
+  if(!cb) cb = opts, opts = {}
   if(!cb) cb = vrange, vrange = '*'
 
   if(/^(git|http)/.test(vrange)) {
     console.error('GET', vrange)
-    return urlResolve(vrange, function (err, pkg) {
+    return urlResolve(vrange, opts, function (err, pkg) {
       if(err)
         console.error(err.stack)
       if(pkg)
@@ -97,16 +99,33 @@ function clean (t) {
   return t
 }
 
-function resolveTree (db, module, version, cb) {
+function resolveTree (db, module, opts, cb) {
+  var parts = module.split('@')
+  var name = parts.shift()
+  var version = parts.shift() || '*'
+  var filter = opts.filter || function (pkg, root) {
+    if(!pkg) return
+    pkg.parent.tree[pkg.name] = pkg
+  }
 
   resolvePackage(db, module, version, function (err, pkg) {
-    cat([
+    var root = pkg
+
+    if(opts.available) {
+      console.log(Object.keys(opts.available))
+      root.parent = {tree: opts.available}
+    }
+
+    pull(cat([
       pull.values([pkg]),
       pull.depthFirst(pkg, function (pkg) {
         var deps = pkg.dependencies || {}
         pkg.tree = {}
-        return pull.values(Object.keys(deps))
-          .pipe(pull.asyncMap(function (name, cb) {
+        return pull(
+          pull.values(Object.keys(deps)),
+          //this could be parallel,
+          //but it's not the bottle neck.
+          pull.asyncMap(function (name, cb) {
             //check if there is already a module that resolves this...
 
             //filter out versions that we already have.
@@ -114,80 +133,56 @@ function resolveTree (db, module, version, cb) {
               return cb()
 
             resolvePackage(db, name, deps[name], cb)
-          }, 10))
-    
-          .pipe(pull.filter(function (_pkg) {
-            if(!_pkg) return
+          }),
+          pull.filter(),
+          pull.through(function (_pkg) {
             _pkg.parent = pkg
-            pkg.tree[_pkg.name] = _pkg
-            return pkg
-          }))
+            filter(_pkg, root)
+          })
+        )
       })
-    ])
-    .pipe(pull.drain(null, function () {
+    ]),
+    pull.drain(null, function () {
       cb(null, clean(pkg))
     }))
   })
+  
 }
 
-function resolveTreeGreedy (db, module, version, cb) {
+function resolveTreeGreedy (db, module, opts, cb) {
+  if(!cb)
+    cb = opts, opts = null
+  opts = opts || {}
+  opts.filter = function (pkg, root) {
+    if(!pkg) return
+    //install non-conflicting modules as low in the tree as possible.
+    //hmm, is this wrong?
+    //hmm, the only way a module is not on the root is if it's
+    //conflicting with one that is already there.
+    //so, what if this module is a child of a conflicting module
+    //aha! we have already checked the path to the root,
+    //and this item would be filtered if it wasn't clear.
+    if(!root.tree[pkg.name]) {
+      root.tree[pkg.name] = pkg
+      pkg.parent = root
+    }
+    else {
+      pkg.parent.tree[pkg.name] = pkg
+    }
+    return pkg
+  }
 
-  resolvePackage(db, module, version, function (err, pkg) {
-    var root = pkg
- 
-    return cat([
-      pull.values([pkg]),
-      pull.depthFirst(pkg, function (pkg) {
-        var deps = pkg.dependencies || {}
-        pkg.tree = {}
-        return pull.values(Object.keys(deps))
-          .pipe(pull.asyncMap(function (name, cb) {
-            //check if there is already a module that resolves this...
-
-            //filter out versions that we already have.
-            if(check(pkg, name, deps[name]))
-              return cb()
- 
-           resolvePackage(db, name, deps[name], function (err, _pkg) {
-              cb(null, _pkg)
-            })
-          }))
-    
-          .pipe(pull.filter(function (_pkg) {
-            if(!_pkg) return
-            //install non-conflicting modules as low in the tree as possible.
-            //hmm, is this wrong?
-            //hmm, the only way a module is not on the root is if it's
-            //conflicting with one that is already there.
-            //so, what if this module is a child of a conflicting module
-            //aha! we have already checked the path to the root,
-            //and this item would be filtered if it wasn't clear.
-            if(!root.tree[_pkg.name]) {
-              root.tree[_pkg.name] = _pkg
-              _pkg.parent = root
-            }
-            else {
-              _pkg.parent = pkg
-              pkg.tree[_pkg.name] = _pkg
-            }
-            return pkg
-          }))
-      })
-    ])
-    .pipe(pull.drain(null, function () {
-      cb(null, clean(pkg))
-    }))
-  })
+  resolveTree(db, module, opts, cb)
 }
 
 var resolve = exports = module.exports = 
-function (db, module, version, opts, cb) {
+function (db, module, opts, cb) {
   if(!cb)
     cb = opts, opts = {}
     if(opts && opts.greedy)
-      resolveTreeGreedy(db, module, version, cb)
+      resolveTreeGreedy(db, module, opts, cb)
     else
-      resolveTree(db, module, version, cb)
+      resolveTree(db, module, opts, cb)
 }
 
 exports.resolveTree = resolveTree
@@ -197,30 +192,35 @@ exports.db = function (db, config) {
   db.methods.resolve = {type: 'async'}
   db.resolve = function (module, opts, cb) {
     if(!cb) cb = opts, opts = {}
-    var parts = module.split('@')
     resolve(
-      db.sublevel('ver'), parts[0], parts[1] || '*',
-      { greedy: opts.greedy || config.greedy },
+      db.sublevel('ver'), module,
+      opts,
       cb
     )
   }
 }
 
 exports.cli = function (db) {
-  db.commands.push(function (config, cb) {
+  db.commands.push(function (db, config, cb) {
     var args = config._.slice()
     if('resolve' !== args.shift()) return
 
     if(!args.length)
-      return cb(new Error('expect module@version? argument'))
+      return cb(new Error('expect module@version? argument')), true
 
-    db.resolve(args,
-    {greedy: config.greedy}, 
-    function (err, tree) {
-      if(err) return cb(err)
-      console.log(JSON.stringify(tree, null, 2))
-      cb()
+    tree.ls(function (err, tree) {
+      db.resolve(args.shift(),
+      { 
+        greedy: config.greedy, 
+        available: tree
+      }, 
+      function (err, tree) {
+        if(err) return cb(err)
+        console.log(JSON.stringify(tree, null, 2))
+        cb(null, tree)
+      })
     })
-  }
+    return true
+  })
 }
 
