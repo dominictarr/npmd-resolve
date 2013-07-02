@@ -1,6 +1,6 @@
 {
   "name": "npmd-resolve",
-  "description": "",
+  "description": "resolve npm dependency trees",
   "version": "2.1.0",
   "homepage": "https://github.com/dominictarr/npmd-resolve",
   "repository": {
