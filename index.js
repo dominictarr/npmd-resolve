@@ -8,7 +8,7 @@ var cat     = require('pull-cat')
 var urlResolve = require('npmd-git-resolve')
 var clean    = require('./clean')
 var ls       = require('npmd-tree').ls
-
+var paramap  = require('pull-paramap')
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
 //figure out what is needed, and then install from
@@ -100,7 +100,7 @@ function resolveTree (db, module, opts, cb) {
           pull.values(Object.keys(deps)),
           //this could be parallel,
           //but it's not the bottle neck.
-          pull.asyncMap(function (name, cb) {
+          paramap(function (name, cb) {
             //check if there is already a module that resolves this...
 
             //filter out versions that we already have.
