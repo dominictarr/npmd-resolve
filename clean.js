@@ -1,6 +1,6 @@
 var fields = ['name', 'version', 'from', 'gypfile', 'shasum']
 
-module.exports = function (pkg) {
+module.exports = function clean (pkg) {
   var deps = pkg.dependencies
   var _deps = pkg.tree || {}
 
@@ -16,8 +16,8 @@ module.exports = function (pkg) {
     clean(_deps[k])
   }
 
-  t.dependencies = _deps
+  pkg.dependencies = _deps
 
-  return t
+  return pkg
 }
 

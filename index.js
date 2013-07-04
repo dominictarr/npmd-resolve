@@ -7,7 +7,7 @@ var semver  = require('semver')
 var cat     = require('pull-cat')
 var urlResolve = require('npmd-git-resolve')
 var clean    = require('./clean')
-
+var tree     = require('./tree')
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
 //figure out what is needed, and then install from
