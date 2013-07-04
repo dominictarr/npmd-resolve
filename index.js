@@ -6,7 +6,7 @@ var inspect = require('util').inspect
 var semver  = require('semver')
 var cat     = require('pull-cat')
 var urlResolve = require('npmd-git-resolve')
-var tree    = require('./tree')
+var clean    = require('./clean')
 
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
@@ -117,7 +117,7 @@ function resolveTree (db, module, opts, cb) {
       })
     ]),
     pull.drain(null, function () {
-      cb(null, tree.clean(pkg))
+      cb(null, clean(pkg))
     }))
   })
   
@@ -171,9 +171,7 @@ exports.db = function (db, config) {
     resolve(
       db.sublevel('ver'), module,
       opts,
-      function (err, tree) {
-        cb(err, tree)
-      }
+      cb
     )
   }
 }

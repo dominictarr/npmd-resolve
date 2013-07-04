@@ -1,21 +1,26 @@
 var pull    = require('pull-stream')
 var paramap = require('pull-paramap')
 var path    = require('path')
-var unpack  = require('npmd-unpack')
+var unpack  = require('npmd-unpack').unpack
 var mkdirp  = require('mkdirp')
 var fs      = require('fs')
 var leaves  = require('./leaves')
 
-function linkable(pkg) {
-  return path.join(process.env.HOME,
-          '.npmd', 'linkable',
-          'string' === typeof pkg ? pkg : pkg.hash)
+function linkable(pkg, opts) {
+  var linkRoot = opts.linkRoot
+    || path.join(process.env.HOME, '.npmd', 'linkable')
+  return path.join(linkRoot, 'string' === typeof pkg ? pkg : pkg.hash)
 }
 
-function linkModule(moduleDir, name, hash, cb) {
+//install a module with a symlink.
+//adds $moduleDir/node_modules/$name -> $hash
+
+function linkModule(moduleDir, name, hash, opts, cb) {
+  if(!cb)
+    cb = opts, opts = {}
   name = name.name || name
   var source = path.join(moduleDir, 'node_modules', name)
-  var target = path.join(linkable(hash), 'package')
+  var target = path.join(linkable(hash, opts), 'package')
 
   fs.readlink (source, function (err, found) {
     if(found === target)
@@ -47,14 +52,14 @@ module.exports = function (ltree, opts, cb) {
   pull(
     pull.values(ltree),
     paramap(function (pkg, cb) {
-      var dir = linkable(pkg)
+      var dir = linkable(pkg, opts)
       if(dirs[dir]) return cb(null, pkg)
 
       fs.stat(dir, function (err) {
         if(dirs[dir]) return cb(null, pkg)
         dirs[dir] = true
         if(!err) return console.log('already there', pkg.name), cb(null, pkg)
-        unpack.unpack(pkg, {
+        unpack(pkg, {
           cache: opts.cache,
           target: dir
         }, function (err) {
@@ -107,8 +112,6 @@ module.exports.db = function (db, config) {
     })
   }
 }
-//install a module with a symlink.
-//adds $moduleDir/node_modules/$name -> $hash
 
 module.exports.commands = function (db) {
   var start = Date.now()

@@ -3,28 +3,7 @@ var path = require('path')
 var pull = require('pull-stream')
 var pfs  = require('pull-fs')
 
-var fields = 'name,version,from,gypfile,shasum'.split(',')
-
-function clean (t) {
-  var deps = t.dependencies
-  var _deps = t.tree || {}
-
-  var shasum = t.shasum || t.dist && t.dist.shasum
-  for(var k in t)
-    if(!~fields.indexOf(k))
-      delete t[k]
-
-  t.shasum = shasum
-
-  for(var k in _deps) {
-    _deps[k].from = deps[k]
-    clean(_deps[k])
-  }
-
-  t.dependencies = _deps
-
-  return t
-}
+var clean = require('./clean')
 
 function filter () {
   return pull(pull.filter(),
@@ -132,5 +111,4 @@ function tree (dir, cb) {
 exports.tree = tree
 exports.findPackage = findPackage
 exports.ls = ls
-exports.clean = clean
 

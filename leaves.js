@@ -1,6 +1,7 @@
 var pt   = require('pull-traverse')
 var pull = require('pull-stream')
 var hash = require('shasum')
+var clean = require('./clean')
 
 function compare(a, b) {
   return a < b ? -1 : a === b ? 0 : 1
