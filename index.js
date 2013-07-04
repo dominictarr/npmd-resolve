@@ -29,6 +29,12 @@ var paramap  = require('pull-paramap')
 //like 2 seconds to resolve browserify (50 modules)
 //but when the cache is warm it's only 50 ms!
 
+//however, I've recently moved on to a technique
+//that simlinks every module.
+//this allows exact control of the code in your dep tree
+//and also, it's really really fast.
+
+//see npmd-leaves and npmd-link 
 
 function resolvePackage (db, module, vrange, opts, cb) {
   if(!cb) cb = opts, opts = {}
