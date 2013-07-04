@@ -161,10 +161,35 @@ var resolve = exports = module.exports =
 function (db, module, opts, cb) {
   if(!cb)
     cb = opts, opts = {}
+
+  function resolve(module, cb) {
     if(opts && opts.greedy)
       resolveTreeGreedy(db, module, opts, cb)
     else
       resolveTree(db, module, opts, cb)
+  }
+
+  if(Array.isArray(module) && module.length > 1) {
+    var n = module.length, a = {}
+
+    module.forEach(function (m) {
+      resolve(m, next)
+    })
+
+    function next (err, tree) {
+      if(err) return n = 0, cb(err)
+      a[tree.name] = tree
+      if(--n) return
+      cb(null, a)
+    }
+
+  } else {
+    if(Array.isArray(module))
+      module = module.shift()
+
+    resolve(module, cb)
+  }
+
 }
 
 exports.resolveTree = resolveTree
@@ -194,7 +219,7 @@ exports.cli = function (db) {
         return cb(new Error('expect module@version? argument')), true
 
       ls(function (err, tree) {
-        db.resolve(args.shift(),
+        db.resolve(args,
         { 
           greedy: config.greedy, 
           available: tree
