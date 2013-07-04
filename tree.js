@@ -3,17 +3,27 @@ var path = require('path')
 var pull = require('pull-stream')
 var pfs  = require('pull-fs')
 
-function readJson () {
-  return pull.asyncMap(function (file, cb) {
-    fs.readFile(file, 'utf8', function (err, data) {
-      if(err) return cb()
-      var json
-      try { json = JSON.parse(data) }
-      catch (err) { return cb() }
-      json.path = path.dirname(file)
-      cb(null, json)
-    })
-  })
+var fields = 'name,version,from,gypfile,shasum'.split(',')
+
+function clean (t) {
+  var deps = t.dependencies
+  var _deps = t.tree || {}
+
+  var shasum = t.shasum || t.dist && t.dist.shasum
+  for(var k in t)
+    if(!~fields.indexOf(k))
+      delete t[k]
+
+  t.shasum = shasum
+
+  for(var k in _deps) {
+    _deps[k].from = deps[k]
+    clean(_deps[k])
+  }
+
+  t.dependencies = _deps
+
+  return t
 }
 
 function filter () {
@@ -34,6 +44,19 @@ function first (cb) {
     function (data) { f = data; return false },
     function (err) { cb(err === true ? null : err, f) }
   )
+}
+
+function readJson () {
+  return pull.asyncMap(function (file, cb) {
+    fs.readFile(file, 'utf8', function (err, data) {
+      if(err) return cb()
+      var json
+      try { json = JSON.parse(data) }
+      catch (err) { return cb() }
+      json.path = path.dirname(file)
+      cb(null, json)
+    })
+  })
 }
 
 function findPackage (dir, cb) {
@@ -74,31 +97,9 @@ function ls (dir, cb) {
   )
 }
 
-var fields = 'name,version,from,gypfile,shasum'.split(',')
 
-function clean (t) {
-  var deps = t.dependencies
-  var _deps = t.tree || {}
-
-  var shasum = t.dist && t.dist.shasum
-  for(var k in t)
-    if(!~fields.indexOf(k))
-      delete t[k]
-
-  t.shasum = shasum
-
-  for(var k in _deps) {
-    _deps[k].from = deps[k]
-    clean(_deps[k])
-  }
-
-  t.dependencies = _deps
-
-  return t
-}
-
-
-//todo: create the same datastructure as resolve.
+//creates the same datastructure as resolve,
+//selecting all dependencies...
 
 function tree (dir, cb) {
   if(!cb) cb = dir, dir = null
@@ -133,25 +134,3 @@ exports.findPackage = findPackage
 exports.ls = ls
 exports.clean = clean
 
-exports.db = function noop () {}
-exports.commands = function (db) {
-  db.commands.push(function (db, config, cb) {
-    var args = config._.slice()
-    var cmd = args.shift()
-    if(cmd == 'tree')
-      tree(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
-      })
-    else if(cmd == 'ls')
-      ls(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
-      })
-    else return null
-
-    return true
-  })
-}

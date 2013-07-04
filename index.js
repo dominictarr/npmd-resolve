@@ -103,8 +103,8 @@ function resolveTree (db, module, opts, cb) {
             //check if there is already a module that resolves this...
 
             //filter out versions that we already have.
-            if(check(pkg, name, deps[name]))
-              return cb()
+            //if(opts.check !== false && check(pkg, name, deps[name]))
+            //  return cb()
 
             resolvePackage(db, name, deps[name], cb)
           }),
@@ -166,10 +166,14 @@ exports.db = function (db, config) {
   db.methods.resolve = {type: 'async'}
   db.resolve = function (module, opts, cb) {
     if(!cb) cb = opts, opts = {}
+    if(opts.hash)
+      opts.greedy = false
     resolve(
       db.sublevel('ver'), module,
       opts,
-      cb
+      function (err, tree) {
+        cb(err, tree)
+      }
     )
   }
 }
@@ -187,7 +191,8 @@ exports.cli = function (db) {
         db.resolve(args.shift(),
         { 
           greedy: config.greedy, 
-          available: tree
+          available: tree,
+          hash: config.hash
         }, 
         function (err, tree) {
           if(err) return cb(err)
