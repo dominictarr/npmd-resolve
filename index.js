@@ -7,7 +7,8 @@ var semver  = require('semver')
 var cat     = require('pull-cat')
 var urlResolve = require('npmd-git-resolve')
 var clean    = require('./clean')
-var tree     = require('./tree')
+var ls       = require('npmd-tree').ls
+
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
 //figure out what is needed, and then install from
@@ -180,17 +181,16 @@ exports.cli = function (db) {
   db.commands.push(function (db, config, cb) {
     var args = config._.slice()
     var cmd = args.shift()
-  
+    
     if(cmd === 'resolve') {
       if(!args.length)
         return cb(new Error('expect module@version? argument')), true
 
-      tree.ls(function (err, tree) {
+      ls(function (err, tree) {
         db.resolve(args.shift(),
         { 
           greedy: config.greedy, 
-          available: tree,
-          hash: config.hash
+          available: tree
         }, 
         function (err, tree) {
           if(err) return cb(err)
@@ -198,25 +198,9 @@ exports.cli = function (db) {
           cb(null, tree)
         })
       })
+      return true
     }
-    else if(cmd == 'tree') {
-      tree.tree(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
-      })
-    }
-    else if(cmd == 'ls')
-      tree.ls(config.installPath, function (err, tree) {
-        if(err) throw err
-        console.log(JSON.stringify(tree, null, 2))
-        cb()
-      })
-    else
-      return
 
-    return true
   })
-
 }
 
