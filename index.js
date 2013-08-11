@@ -9,6 +9,8 @@ var urlResolve = require('npmd-git-resolve')
 var clean    = require('./clean')
 var ls       = require('npmd-tree').ls
 var paramap  = require('pull-paramap')
+var deps     = require('get-deps')
+
 //experimenting with different installation resolve
 //algs. the idea is to traverse the tree locally,
 //figure out what is needed, and then install from
@@ -81,16 +83,24 @@ function check(pkg, name, range) {
   return check(pkg.parent, name, range)
 }
 
-function resolveTree (db, module, opts, cb) {
+function fixModule (module) {
+  if('string' === typeof module) {
   var parts = module.split('@')
-  var name = parts.shift()
-  var version = parts.shift() || '*'
+    return {name: parts.shift(), version: parts.shift() || '*'}
+  }
+  return module
+}
+
+function resolveTree (db, module, opts, cb) {
+
+  module = fixModule(module)
+
   var filter = opts.filter || function (pkg, root) {
     if(!pkg) return
     pkg.parent.tree[pkg.name] = pkg
   }
 
-  resolvePackage(db, name, version, function (err, pkg) {
+  resolvePackage(db, module.name, module.version, function (err, pkg) {
     if(err) return cb(err)
     var root = pkg
 
@@ -132,8 +142,8 @@ function resolveTree (db, module, opts, cb) {
 }
 
 function resolveTreeGreedy (db, module, opts, cb) {
-  if(!cb)
-    cb = opts, opts = null
+  if(!cb) cb = opts, opts = null
+
   opts = opts || {}
   opts.filter = function (pkg, root) {
     if(!pkg) return
@@ -170,6 +180,7 @@ function (db, module, opts, cb) {
   }
 
   if(Array.isArray(module) && module.length > 1) {
+
     var n = module.length, a = {}
 
     module.forEach(function (m) {
@@ -216,7 +227,7 @@ exports.cli = function (db) {
     
     if(cmd === 'resolve') {
       if(!args.length)
-        return cb(new Error('expect module@version? argument')), true
+        args = deps(process.cwd(), config)
 
       ls(function (err, tree) {
         db.resolve(args,
