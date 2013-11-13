@@ -100,6 +100,8 @@ function resolveTree (db, module, opts, cb) {
     pkg.parent.tree[pkg.name] = pkg
   }
 
+  if (! module) return cb(null, {})
+
   resolvePackage(db, module.name, module.version, function (err, pkg) {
     if(err) return cb(err)
     var root = pkg
