@@ -2,6 +2,7 @@ var range   = require('padded-semver').range
 var peek    = require('level-peek')
 var path    = require('path')
 var pull    = require('pull-stream')
+var pt      = require('pull-traverse')
 var inspect = require('util').inspect
 var semver  = require('semver')
 var cat     = require('pull-cat')
@@ -70,9 +71,10 @@ function resolvePackage (db, module, vrange, opts, cb) {
 
   peek.last(db, r, function (err, key, pkg) {
     if(err) return cb(err)
-    if(!semver.satisfies(pkg.version, vrange))
+    if(!semver.satisfies(pkg.version, vrange)) {
       return cb(new Error(module+'@'+pkg.version +'><'+ vrange))
-    cb(err, pkg)
+    }
+    cb(null, pkg)
   })
 }
 
@@ -112,7 +114,7 @@ function resolveTree (db, module, opts, cb) {
 
     pull(cat([
       pull.values([pkg]),
-      pull.depthFirst(pkg, function (pkg) {
+      pt.depthFirst(pkg, function (pkg) {
         var deps = pkg.dependencies || {}
         pkg.tree = {}
         return pull(
@@ -136,8 +138,8 @@ function resolveTree (db, module, opts, cb) {
         )
       })
     ]),
-    pull.drain(null, function () {
-      cb(null, clean(pkg))
+    pull.drain(null, function (err) {
+      cb(err, clean(pkg))
     }))
   })
   
@@ -232,11 +234,11 @@ exports.cli = function (db) {
         args = deps(process.cwd(), config)
 
       ls(function (err, tree) {
-        db.resolve(args,
-        { 
-          greedy: config.greedy, 
+        if(err) return cb(err)
+        db.resolve(args, {
+          greedy: config.greedy,
           available: tree
-        }, 
+        },
         function (err, tree) {
           if(err) return cb(err)
           console.log(JSON.stringify(tree, null, 2))
