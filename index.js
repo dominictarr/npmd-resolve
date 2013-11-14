@@ -42,7 +42,7 @@ function resolvePackage (db, module, vrange, opts, cb) {
   if(!cb) cb = opts, opts = {}
   if(!cb) cb = vrange, vrange = '*'
 
-  if(/^(git|http)/.test(vrange)) {
+  if(/^(git|http|\w+\/)/.test(vrange)) {
     console.error('GET', vrange)
     return urlResolve(vrange, opts, function (err, pkg) {
       if(err)
