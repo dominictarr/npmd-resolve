@@ -17,6 +17,10 @@ function all (db, module, cb) {
     .on('error', cb)
 }
 
+//TODO: add registry update resolve,
+//that requests modules from the registry,
+//freshining the local database.
+
 function remoteResolve (module, vrange, opts, cb) {
 
   //if vrange is a http or git
