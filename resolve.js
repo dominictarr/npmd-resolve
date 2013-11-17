@@ -1,10 +1,11 @@
 var semver = require('semver')
 var fs = require('fs')
 var path = require('path')
+var range   = require('padded-semver').range
+var peek    = require('level-peek')
 
 function all (db, module, cb) {
   var found = {}
-  console.log('resolve', module)
   db.createValueStream({min: module + '!', max: module + '!~'})
     .on('data', function (data) {
       found[data.version] = data
@@ -40,7 +41,7 @@ function resolvePackage (db, module, vrange, opts, cb) {
   if(vrange == 'latest')
     vrange = '*'
 
-  if(true) {
+  if(opts.correct === true) {
 
     all(db, module, function (err, versions) {
       if(err) return cb(err)
@@ -61,6 +62,7 @@ function resolvePackage (db, module, vrange, opts, cb) {
         })
     
       cb(null, versions[ver])
+
     })
 
   } else {
