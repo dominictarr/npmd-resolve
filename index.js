@@ -1,5 +1,3 @@
-var range   = require('padded-semver').range
-var peek    = require('level-peek')
 var path    = require('path')
 var pull    = require('pull-stream')
 var pt      = require('pull-traverse')
