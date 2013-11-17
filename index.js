@@ -39,44 +39,8 @@ var deps     = require('get-deps')
 
 //see npmd-leaves and npmd-link 
 
-function resolvePackage (db, module, vrange, opts, cb) {
-  if(!cb) cb = opts, opts = {}
-  if(!cb) cb = vrange, vrange = '*'
+var resolvePackage = require('./resolve')
 
-  if(/^(git|http|\w+\/)/.test(vrange)) {
-    console.error('GET', vrange)
-    return urlResolve(vrange, opts, function (err, pkg) {
-      if(err)
-        console.error(err.stack)
-      if(pkg)
-        console.error(pkg.name+'@'+pkg.shasum)
-      cb(err, pkg)
-    })
-  }
-    //if vrange is a http or git
-    //download the bundle
-    //note - you can download git via an archive...
-    //then unpack to get package.json
-    //
-
-  if(vrange == 'latest')
-    vrange = '*'
-
-  var r = range(vrange || '*')
-
-  r = {
-    min: module + '!'+(r.start || ''),
-    max: module + '!'+(r.end || '~'),
-  }
-
-  peek.last(db, r, function (err, key, pkg) {
-    if(err) return cb(err)
-    if(!semver.satisfies(pkg.version, vrange)) {
-      return cb(new Error(module+'@'+pkg.version +'><'+ vrange))
-    }
-    cb(null, pkg)
-  })
-}
 
 function check(pkg, name, range) {
   if(!pkg) return false
@@ -106,6 +70,7 @@ function resolveTree (db, module, opts, cb) {
 
   resolvePackage(db, module.name, module.version, function (err, pkg) {
     if(err) return cb(err)
+   
     var root = pkg
 
     if(opts.available) {
@@ -128,7 +93,13 @@ function resolveTree (db, module, opts, cb) {
             //if(opts.check !== false && check(pkg, name, deps[name]))
             //  return cb()
 
-            resolvePackage(db, name, deps[name], cb)
+            resolvePackage(db, name, deps[name], function (err, _pkg) {
+              if(err) {
+                err.message = 'package:' + pkg.name + '@' + pkg.version + ' could not resolve ' + name + '@'+deps[name] + '\n' + 
+                  err.message
+              }
+              cb(err, _pkg)
+            })
           }),
           pull.filter(),
           pull.through(function (_pkg) {
