@@ -3,6 +3,7 @@ var fs = require('fs')
 var path = require('path')
 var range   = require('padded-semver').range
 var peek    = require('level-peek')
+var urlResolve = require('npmd-git-resolve')
 
 function all (db, module, cb) {
   var found = {}
@@ -16,12 +17,12 @@ function all (db, module, cb) {
     .on('error', cb)
 }
 
-module.exports = resolvePackage
+function remoteResolve (module, vrange, opts, cb) {
 
-function resolvePackage (db, module, vrange, opts, cb) {
-  if(!cb) cb = opts, opts = {}
-  if(!cb) cb = vrange, vrange = '*'
-
+  //if vrange is a http or git
+  //download the bundle
+  //note - you can download git via an archive...
+  //then unpack to get package.json
   if(/^(git|http|\w+\/)/.test(vrange)) {
     console.error('GET', vrange)
     return urlResolve(vrange, opts, function (err, pkg) {
@@ -32,40 +33,51 @@ function resolvePackage (db, module, vrange, opts, cb) {
       cb(err, pkg)
     })
   }
-    //if vrange is a http or git
-    //download the bundle
-    //note - you can download git via an archive...
-    //then unpack to get package.json
-    //
+  else cb()
+}
 
-  if(vrange == 'latest')
-    vrange = '*'
 
-  if(opts.correct === true) {
+function offlineResolve (module, vrange, opts, cb) {
+  fs.readdir(path.join(opts.cache, module), function (err, list) {
+    if(err) return cb(err)
+    list = list.filter(function (e) {
+      return semver.valid(e, true)
+    })
+    var ver = semver.maxSatisfying(list, vrange, true)
+    if(!ver)
+      return cb(new Error('no module satified version:' + vrange))
+    fs.readFile(
+      path.join(opts.cache, module, ver, 'package', 'package.json'),
+      'utf-8',
+      function (err, json) {
+        if(err) return cb(err)
+        try { json = JSON.parse(json) } catch (err) { return cb(err) }
+        cb(null, json)
+      })
+  })
+}
 
+
+module.exports = function (db, config) {
+
+  function correctResolve (module, vrange, opts, cb) {
     all(db, module, function (err, versions) {
       if(err) return cb(err)
       var ver = semver.maxSatisfying(Object.keys(versions), vrange, true)
       if(!ver)
         return cb(new Error('no module satified version:' + vrange))
-      if(opts.offline)
-        return fs.readdir(path.join(process.env.HOME, '.npm', module), function (err, list) {
-          var ver = semver.maxSatisfying(list, vrange, true)
-          if(!ver)
-            return cb(new Error('no module satified version:' + vrange))
-          fs.readFile(path.join(process.env.HOME, '.npm', module, 'package', 'package.json'), 'utf-8',
-            function (err, json) {
-              if(err) return cb(err)
-              try { json = JSON.parse(json) } catch (err) { return cb(err) }
-              cb(null, json)
-            })
-        })
-    
+
       cb(null, versions[ver])
-
     })
+  }
 
-  } else {
+ function peekResolve (module, vrange, opts, cb) {
+    if(!cb) cb = opts, opts = {}
+    if(!cb) cb = vrange, vrange = '*'
+
+    if(vrange == 'latest')
+      vrange = '*'
+
     var r = range(vrange || '*')
 
     r = {
@@ -74,15 +86,25 @@ function resolvePackage (db, module, vrange, opts, cb) {
     }
 
     peek.last(db, r, function (err, key, pkg) {
-      if(err) {
-          console.log(r, vrange)
-          return cb(err)
-      }
-      if(!semver.satisfies(pkg.version, vrange || '*', true)) {
+      if(err) return cb(err)
+
+      if(!semver.satisfies(pkg.version, vrange || '*', true))
         return cb(new Error(module+'@'+pkg.version +'><'+ vrange))
-      }
+      
       cb(null, pkg)
     })
   }
-}
 
+  return function (module, vrange, opts, cb) {
+    if(!cb) throw new Error('expects cb')
+    remoteResolve(module, vrange, opts, function (err, pkg) {
+      if(pkg || err)   return cb(err, pkg)
+      if(opts.offline) return offlineResolve(module, vrange, opts, cb)
+      if(opts.correct) return correctResolve(module, vrange, opts, cb)
+      peekResolve(module, vrange, opts, function (err, pkg) {
+        if(pkg) cb(null, pkg)
+        else correctResolve(module, vrange, opts, cb)
+      })
+    })
+  }
+}
