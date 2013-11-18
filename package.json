@@ -8,7 +8,7 @@
     "url": "git://github.com/dominictarr/npmd-resolve.git"
   },
   "dependencies": {
-    "padded-semver": "~2.0.1",
+    "padded-semver": "~2.0.4",
     "semver": "~2.0",
     "level-peek": "~1.0.6",
     "pull-stream": "~2.20",
