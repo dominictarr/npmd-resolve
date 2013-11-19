@@ -10,7 +10,13 @@ module.exports = function (db, config) {
 if(!module.parent) {
   var resolvePackage = createResolvePackage(null, {})
   var resolve = createResolve(resolvePackage)
-  resolve(process.argv.slice(2), {}, function (err, tree) {
+  var opts = {}
+  var args = process.argv.slice(2).filter(function (e) {
+    if(/^--online/.test(e)) return !(opts.online = true)
+    return true
+  })
+
+  resolve(args, opts, function (err, tree) {
     if(err) throw err
     console.log(JSON.stringify(tree, null, 2))
   })
