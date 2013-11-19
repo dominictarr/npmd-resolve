@@ -22,12 +22,12 @@ function fixModule (module) {
   return module
 }
 
-function niceError(err, parent) {
+function niceError(err, parent, name, range) {
   if(!err) return
-  err.message = 'package:' 
-  + pkg.name + '@' + pkg.version 
-  + ' could not resolve ' 
-  + name + '@' + deps[name] 
+  err.message = 'package:'
+  + parent.name + '@' + parent.version
+  + ' could not resolve '
+  + name + '@' + range
   + '\n' + err.message
 
   return err
@@ -72,7 +72,7 @@ function createResolve (resolvePackage) {
               //  return cb()
 
               resolvePackage(name, deps[name], opts, function (err, _pkg) {
-                cb(niceError(err, pkg), _pkg)
+                cb(niceError(err, pkg, name, deps[name]), _pkg)
               })
             }),
             pull.filter(),
