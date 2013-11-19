@@ -42,7 +42,8 @@ function remoteResolve (module, vrange, opts, cb) {
 
 
 function offlineResolve (module, vrange, opts, cb) {
-  fs.readdir(path.join(opts.cache, module), function (err, list) {
+  var cache = opts.cache || path.join(process.env.HOME, '.npm')
+  fs.readdir(path.join(cache, module), function (err, list) {
     if(err) return cb(err)
     list = list.filter(function (e) {
       return semver.valid(e, true)
@@ -51,7 +52,7 @@ function offlineResolve (module, vrange, opts, cb) {
     if(!ver)
       return cb(new Error('no module satified version:' + vrange))
     fs.readFile(
-      path.join(opts.cache, module, ver, 'package', 'package.json'),
+      path.join(cache, module, ver, 'package', 'package.json'),
       'utf-8',
       function (err, json) {
         if(err) return cb(err)
@@ -103,7 +104,7 @@ module.exports = function (db, config) {
     if(!cb) throw new Error('expects cb')
     remoteResolve(module, vrange, opts, function (err, pkg) {
       if(pkg || err)   return cb(err, pkg)
-      if(opts.offline) return offlineResolve(module, vrange, opts, cb)
+      if(opts.offline || !db) return offlineResolve(module, vrange, opts, cb)
       if(opts.correct) return correctResolve(module, vrange, opts, cb)
       peekResolve(module, vrange, opts, function (err, pkg) {
         if(pkg) cb(null, pkg)
