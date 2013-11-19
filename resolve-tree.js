@@ -107,7 +107,7 @@ function createResolve (resolvePackage) {
       return pkg
     }
 
-    resolveTree(resolvePackage, module, opts, cb)
+    resolveTree(module, opts, cb)
   }
 
   return function (module, opts, cb) {
