@@ -14,11 +14,13 @@
     "pull-stream": "~2.20",
     "npmd-git-resolve": ">=2.1.0 <3",
     "pull-cat": "~1.1.5",
-    "request": "2",
+    "request": "~2.21.0",
     "pull-fs": "~1.1.3",
     "npmd-tree": "2.0.0",
     "pull-paramap": "1.0.3",
-    "pull-traverse": "~1.0.1"
+    "pull-traverse": "~1.0.1",
+    "tar": "~0.1.17",
+    "mkdirp": "~0.3.5"
   },
   "bin": "./index",
   "scripts": {
