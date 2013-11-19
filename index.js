@@ -13,6 +13,7 @@ if(!module.parent) {
   var opts = {}
   var args = process.argv.slice(2).filter(function (e) {
     if(/^--online/.test(e)) return !(opts.online = true)
+    if(/^--greedy/.test(e)) return !(opts.greedy = true)
     return true
   })
 
