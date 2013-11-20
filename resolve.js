@@ -51,7 +51,7 @@ module.exports = function (db, config) {
       var ver = semver.maxSatisfying(versions, vrange, true)
       if(!ver)
         return cb(new Error(
-          'no version of:' + module + 'satified version:' + vrange + '\n' +
+          'no version of:' + module + ' satified version:' + vrange + '\n' +
           'expected one of:' + JSON.stringify(versions)
         ))
 
