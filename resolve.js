@@ -47,9 +47,13 @@ module.exports = function (db, config) {
   function correctResolve (module, vrange, opts, cb) {
     all(db, module, function (err, versions) {
       if(err) return cb(err)
-      var ver = semver.maxSatisfying(Object.keys(versions), vrange, true)
+      var versions = Object.keys(versions)
+      var ver = semver.maxSatisfying(versions, vrange, true)
       if(!ver)
-        return cb(new Error('no module satified version:' + vrange))
+        return cb(new Error(
+          'no version of:' + module + 'satified version:' + vrange + '\n' +
+          'expected one of:' + JSON.stringify(versions)
+        ))
 
       cb(null, versions[ver])
     })
