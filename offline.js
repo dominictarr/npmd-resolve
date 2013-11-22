@@ -37,13 +37,11 @@ function sha(file, cb) {
 }
 
 function readJsonAndHash (cachedir, cb) {
-  var pkgfile =  path.join(cachedir,'package', 'package.json')
-  var pkgtarfile = path.join(cachedir, 'package.tgz')
   var err, hash, pkg
-  sha(pkgtarfile, function (_err, _hash) { 
+  sha(path.join(cachedir, 'package.tgz'), function (_err, _hash) { 
     err =_err; hash = _hash; next()
   })
-  readJson(pkgfile, function (_err, _pkg) {
+  readJson(path.join(cachedir, 'package', 'package.json'), function (_err, _pkg) {
     err = _err; pkg = _pkg; next()
   })
 
@@ -75,7 +73,7 @@ module.exports = function (module, vrange, opts, cb) {
         //if so, the package.json won't be unpacked.
         //unpack it and try again.
         return untar(
-          pkgtarfile,
+          path.join(cachedir, 'package.tgz'),
           cachedir,
           function (err, pkg) {
             if(err) return cb(err)
