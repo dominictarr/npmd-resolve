@@ -20,7 +20,7 @@ function untar(file, dir, cb) {
     err.message = (
         err.message
       + '\n trying to unpack '
-      + name + '@' + ver
+      + file
     )
     cb(err)
   })
