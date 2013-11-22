@@ -12,6 +12,10 @@ if(!module.parent) {
   var resolve = createResolve(resolvePackage)
   var opts = {}
   var args = process.argv.slice(2).filter(function (e) {
+    if(/(^-v|^--version)/.test(e)) {
+      console.log(require('./package').version)
+      process.exit(0)
+    }
     if(/^--online/.test(e)) return !(opts.online = true)
     if(/^--greedy/.test(e)) return !(opts.greedy = true)
     return true
