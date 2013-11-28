@@ -24,8 +24,8 @@ module.exports = function (module, vrange, opts, cb) {
     if(!err)
       headers['if-none-match'] = json._etag
     request({url: u, headers: headers}, function (err, res, data) {
-      console.error(res.statusCode, u)
       if(err) return cb(err)
+      console.error(res.statusCode, u)
       if(res.statusCode === 304)
         return next(null, json)
 
