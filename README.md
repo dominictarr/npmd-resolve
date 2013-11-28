@@ -30,6 +30,14 @@ npmd-resolve browserify | npmd-install
 npmd-resolve browserify --online | npmd-install
 ```
 
+## Usage
+
+``` js
+npmd-resolve module@ver,...   # resolve specific modules
+npmd-resolve < package.json   # resolve all deps for this package.json
+npmd-resolve                  # resolve all deps for current directory
+```
+
 ## data format:
 
 `npmd-resolve` assumes a leveldb of package.json's with format:
