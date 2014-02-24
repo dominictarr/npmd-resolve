@@ -21,7 +21,8 @@
     "pull-traverse": "~1.0.1",
     "tar": "~0.1.17",
     "mkdirp": "~0.3.5",
-    "get-deps": "~2.1.0"
+    "get-deps": "~2.1.0",
+    "npmd-config": "~1.0.10"
   },
   "bin": "./index.js",
   "scripts": {
