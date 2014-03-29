@@ -18,10 +18,10 @@
     "npmd-tree": ">=3.3.4 <4",
     "pull-paramap": "1.0.3",
     "pull-traverse": "~1.0.1",
-    "tar": "~0.1.17",
     "mkdirp": "~0.3.5",
     "get-deps": "~2.1.0",
-    "npmd-config": "~1.0.10"
+    "npmd-config": "~1.0.10",
+    "npmd-cache": "2.0.0"
   },
   "bin": "./index.js",
   "scripts": {
