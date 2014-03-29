@@ -1,99 +1,44 @@
-var semver = require('semver')
-var range   = require('padded-semver').range
-var peek    = require('level-peek')
-var urlResolve = require('npmd-git-resolve')
-var onlineResolve = require('./online')
-var offlineResolve = require('./offline')
+var online = require('./online')
+var path = require('path')
 
-function all (db, module, cb) {
-  var found = {}
-  db.createValueStream({min: module + '!', max: module + '!~'})
-    .on('data', function (data) {
-      found[data.version] = data
-    })
-    .on('end', function () {
-      cb(null, found)
-    })
-    .on('error', cb)
+function cascade(methods) {
+  return function () {
+    var args = [].slice.call(arguments)
+    var cb = args.pop()
+    ;(function next (i) {
+      methods[i].apply(null, args.concat(function (err, value) {
+        if(err) return cb(err)
+        if(!value) return next(i + 1)
+        cb(null, value)
+      }))
+
+    })(0)
+  }
 }
 
-//TODO: add registry update resolve,
-//that requests modules from the registry,
-//freshining the local database.
+module.exports = function (cache, config) {
+  config.path = (config.path || path.join(process.env.HOME, '.npmd'))
+  cache = cache || require('npmd-cache')(config)
 
-function remoteResolve (module, vrange, opts, cb) {
-
-  //if vrange is a http or git
-  //download the bundle
-  //note - you can download git via an archive...
-  //then unpack to get package.json
-  if(/^(git|http|\w+\/)/.test(vrange)) {
-    console.error('GET', vrange)
-    return urlResolve(vrange, opts, function (err, pkg) {
-      if(err)
-        console.error(err.stack)
-      if(pkg)
-        console.error(pkg.name+'@'+pkg.shasum)
-      cb(err, pkg)
-    })
-  }
-  else cb()
-}
-
-
-
-module.exports = function (db, config) {
-
-  function correctResolve (module, vrange, opts, cb) {
-    all(db, module, function (err, versions) {
-      if(err) return cb(err)
-      var versions = Object.keys(versions)
-      var ver = semver.maxSatisfying(versions, vrange, true)
-      if(!ver)
-        return cb(new Error(
-          'no version of:' + module + ' satified version:' + vrange + '\n' +
-          'expected one of:' + JSON.stringify(versions)
-        ))
-
-      cb(null, versions[ver])
-    })
-  }
-
- function peekResolve (module, vrange, opts, cb) {
-    if(!cb) cb = opts, opts = {}
-    if(!cb) cb = vrange, vrange = '*'
-
-    if(vrange == 'latest')
-      vrange = '*'
-
-    var r = range(vrange || '*')
-
-    r = {
-      min: module + '!'+(r.start || ''),
-      max: module + '!'+(r.end || '~'),
+  return cascade([
+    function (m, v, opts, cb) {
+      if(opts.online === false || opts.offline) return cb()
+      return online(m, v, opts, cb)
+    },
+    cache.resolve,
+    function (m, v, _, cb) {
+      cb(new Error('could not resolve' + module + '@' + v))
     }
+  ])
+}
 
-    peek.last(db, r, function (err, key, pkg) {
-      if(err) return cb(err)
+if(!module.parent) {
+  var opts = require('minimist')(process.argv.slice(2))
+  var parts = opts._[0].split('@')
+  var resolve = module.exports(null, opts)
 
-      if(!semver.satisfies(pkg.version, vrange || '*', true))
-        return cb(new Error(module+'@'+pkg.version +'><'+ vrange))
-      
-      cb(null, pkg)
-    })
-  }
-
-  return function (module, vrange, opts, cb) {
-    if(!cb) throw new Error('expects cb')
-    remoteResolve(module, vrange, opts, function (err, pkg) {
-      if(pkg || err) return cb(err, pkg)
-      if(opts.online)         return onlineResolve(module, vrange, opts, cb)
-      if(opts.offline || !db) return offlineResolve(module, vrange, opts, cb)
-      if(opts.correct)        return correctResolve(module, vrange, opts, cb)
-      peekResolve(module, vrange, opts, function (err, pkg) {
-        if(pkg) cb(null, pkg)
-        else correctResolve(module, vrange, opts, cb)
-      })
-    })
-  }
+  resolve(parts[0], parts[1], opts, function (err, pkg) {
+    if(err) throw err
+    console.log(JSON.stringify(pkg, null, 2))
+  })
 }
