@@ -33,6 +33,8 @@ function niceError(err, parent, name, range) {
   return err
 }
 
+var unresolved = {}
+
 function createResolve (resolvePackage) {
 
   function resolveTree (module, opts, cb) {
@@ -70,8 +72,10 @@ function createResolve (resolvePackage) {
               //filter out versions that we already have.
               //if(opts.check !== false && check(pkg, name, deps[name]))
               //  return cb()
-
+              unresolved[name + '@' + deps[name]] = true
               resolvePackage(name, deps[name], opts, function (err, _pkg) {
+                delete unresolved[name + '@' + deps[name]]
+
                 cb(niceError(err, pkg, name, deps[name]), _pkg)
               })
             }),
@@ -144,4 +148,11 @@ function createResolve (resolvePackage) {
     }
   }
 }
+
+//This Should Never Happen.
+process.on('exit', function () {
+  var keys = Object.keys(unresolved)
+  if(keys.length)
+  throw new Error('resolve did not callback: ' + keys.join(', '))
+})
 

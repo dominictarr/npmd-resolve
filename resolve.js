@@ -8,10 +8,9 @@ function cascade(methods) {
     ;(function next (i) {
       methods[i].apply(null, args.concat(function (err, value) {
         if(err) return cb(err)
-        if(!value) return next(i + 1)
+        if(value == null) return next(i + 1)
         cb(null, value)
       }))
-
     })(0)
   }
 }
