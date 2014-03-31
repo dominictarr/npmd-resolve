@@ -3,8 +3,8 @@
 var createResolvePackage = require('./resolve')
 var createResolve        = require('./resolve-tree')
 
-module.exports = function (db, config) {
-  return createResolve(createResolvePackage(db, config))
+module.exports = function (db, cache, config) {
+  return createResolve(createResolvePackage(cache, config))
 }
 
 if(!module.parent) {
