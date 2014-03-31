@@ -9,7 +9,7 @@ module.exports = function clean (pkg) {
       delete pkg[k]
 
   for(var k in _deps) {
-    _deps[k].from = deps[k]
+    _deps[k].from = _deps[k].from || deps[k]
     clean(_deps[k])
   }
 

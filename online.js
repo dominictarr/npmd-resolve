@@ -22,13 +22,12 @@ var DAY = 24*HOUR
 
 module.exports = function (module, vrange, opts, cb) {
   var headers = {}
-  var registry = opts.registry || 'http://registry.npmjs.org'
+  var registry = opts.registry || 'https://registry.npmjs.org'
   var cache = opts.cache || path.join(process.env.HOME, '.npm')
   var u = url.resolve(registry, module)
   var cachedfile = path.join(cache, module, '.cache.json')
 
   //only resolve module@semver (NOT urls - leave that to npmd-cache)
-
 
   if(!semver.validRange(vrange))
     return cb()
@@ -102,6 +101,22 @@ module.exports = function (module, vrange, opts, cb) {
       }
       var pkg = json.versions[ver]
       pkg.shasum = pkg.shasum || pkg.dist.shasum
+      
+      // ********************
+      // There are some modules (at least esprima-fb@3001.1.0-dev-harmony-fb)
+      // where the url does not match the version. it's probably only in cases
+      // where the semver is invalid. I'm gonna include this ugly work-around.
+      // because fixing it in the database is out of my control...
+
+      var from = (
+        registry + '/' + pkg.name + '/-/' + 
+        pkg.name + '-' + pkg.version + '.tgz'
+      ).replace(/^https/, 'http')
+      if(pkg.dist.tarball.replace(/^https/, 'http') !== from)
+        pkg.from = pkg.dist.tarball.replace(/^http:/, 'https:')
+
+      //*********************
+      
       cb(null, pkg)
     }
 
