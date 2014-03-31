@@ -16,7 +16,7 @@ function cascade(methods) {
 }
 
 module.exports = function (cache, config) {
-  config.path = (config.path || path.join(process.env.HOME, '.npmd'))
+  config.dbPath = (config.dbPath || path.join(process.env.HOME, '.npmd'))
   cache = cache || require('npmd-cache')(config)
 
   return cascade([
