@@ -14,7 +14,7 @@ cache, or querying the npm registry, if you provide the `{online: true}` option.
 ``` js
 var resolve = require('npmd-resolve')
 //versionSublevel, moduleName, moduleVersion, config
-resolve(db.sublevel('ver'), 'browserify', '2', 
+resolve(db.sublevel('ver'), 'browserify', '2',
   {greedy: true}, function (err, tree) {
     console.error(tree)
   })
@@ -22,7 +22,7 @@ resolve(db.sublevel('ver'), 'browserify', '2',
 
 ## UNIX
 
-``` js
+``` bash
 npm install -g npmd-resolve npmd-install
 # then
 npmd-resolve browserify | npmd-install
@@ -32,7 +32,7 @@ npmd-resolve browserify --online | npmd-install
 
 ## Usage
 
-``` js
+``` bash
 npmd-resolve module@ver,...   # resolve specific modules
 npmd-resolve < package.json   # resolve all deps for this package.json
 npmd-resolve                  # resolve all deps for current directory
