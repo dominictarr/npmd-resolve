@@ -1,4 +1,5 @@
 var online = require('./online')
+var offline = require('./offline')
 var path = require('path')
 
 function cascade(methods) {
@@ -17,16 +18,23 @@ function cascade(methods) {
 
 module.exports = function (cache, config) {
   config.dbPath = (config.dbPath || path.join(process.env.HOME, '.npmd'))
-  cache = cache || require('npmd-cache')(config)
 
   return cascade([
     function (m, v, opts, cb) {
-      if(opts.online === false || opts.offline) return cb()
-      return online(m, v, opts, cb)
+      if(opts.online === false || opts.offline)
+        return offline(m, v, opts, cb)
+      return online(m, v, opts, function (err, pkg) {
+        if(err && err.code === 'ENOTFOUND') {
+          console.error('npmd: network is ENOTFOUND. fallback to offline resolution')
+          opts.offline = true
+          return offline(m, v, opts, cb)
+        }
+        cb(err, pkg)
+      })
     },
     cache.resolve,
     function (m, v, _, cb) {
-      cb(new Error('could not resolve' + module + '@' + v))
+      cb(new Error('could not resolve ' + m + '@' + v))
     }
   ])
 }
