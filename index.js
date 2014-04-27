@@ -24,19 +24,18 @@ if(!module.parent) {
     process.stdin
       .on('data', function (d) { data += d })
       .on('end', function () {
-        args = getDeps.mergeDeps(JSON.stringify(data), {dev: true})
-        next()
-      })
-  else
-    next()
+        resolve(JSON.parse(data), config, function (err, tree) {
+          if(err) throw err
+          console.log(JSON.stringify(tree, null, 2))
+        })
 
-  function next () {
+      })
+  else {
     if(!args.length)
       args = getDeps(process.cwd(), {dev: true})
     resolve(args, config, function (err, tree) {
       if(err) throw err
       console.log(JSON.stringify(tree, null, 2))
     })
-
   }
 }
