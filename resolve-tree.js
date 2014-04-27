@@ -42,6 +42,10 @@ function merge (a, b) {
   return c
 }
 
+function isPackage(pkg) {
+  return pkg.name && pkg.version && (pkg.dependencies || pkg.devDependencies)
+}
+
 var unresolved = {}
 
 function createResolve (resolvePackage) {
@@ -61,10 +65,12 @@ function createResolve (resolvePackage) {
     //we should just use that, instead of calling resolve pkg.
     var root
 
-    resolvePackage(module.name, module.version, opts, function (err, pkg) {
-      if(err) return cb(err)
-      tree(pkg)
-    })
+    if(isPackage(module)) tree(module)
+    else
+      resolvePackage(module.name, module.version, opts, function (err, pkg) {
+        if(err) return cb(err)
+        tree(pkg)
+      })
 
     function tree (root) {
       if(opts.available) {
