@@ -29,6 +29,9 @@ module.exports = function (module, vrange, opts, cb) {
       pull.asyncMap(function (version, cb) {
         var hash = doc.versions[version].dist.shasum
 
+        var pkg = doc.versions[version]
+        pkg.shasum = pkg.dist.shasum
+
         var filename = path.join(
                         opts.dbPath, 'blobs',
                         hash.substring(0, 2),
@@ -37,7 +40,7 @@ module.exports = function (module, vrange, opts, cb) {
 
         fs.stat(filename, function (err, stat) {
           if(err) cb()
-          else    cb(null, doc.versions[version])
+          else    cb(null, pkg)
         })
 
       }),
