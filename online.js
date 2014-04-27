@@ -90,6 +90,16 @@ module.exports = function (module, vrange, opts, cb) {
       // need to test how often I actually run into this problem.
       // ********************
 
+      // ********************
+      // TODO: if --offline then filter to max satisfying version
+      // that is available in cache.
+      // do this by selecting the max satisifying version,
+      // then checking it's available - if not repeat.
+      // filter by satisfies, sort by order,
+      // then take the first one that cache.has(hash, cb) is true for.
+      // -- nah, better idea is make this a separate resolution strategy.
+      // ********************
+
       var versions = Object.keys(json.versions)
       var ver = semver.maxSatisfying(versions, vrange, true)
       if(!ver) {
@@ -101,7 +111,7 @@ module.exports = function (module, vrange, opts, cb) {
       }
       var pkg = json.versions[ver]
       pkg.shasum = pkg.shasum || pkg.dist.shasum
-      
+
       // ********************
       // There are some modules (at least esprima-fb@3001.1.0-dev-harmony-fb)
       // where the url does not match the version. it's probably only in cases
@@ -109,14 +119,13 @@ module.exports = function (module, vrange, opts, cb) {
       // because fixing it in the database is out of my control...
 
       var from = (
-        registry + '/' + pkg.name + '/-/' + 
+        registry + '/' + pkg.name + '/-/' +
         pkg.name + '-' + pkg.version + '.tgz'
       ).replace(/^https/, 'http')
       if(pkg.dist.tarball.replace(/^https/, 'http') !== from)
         pkg.from = pkg.dist.tarball.replace(/^http:/, 'https:')
+      // ********************
 
-      //*********************
-      
       cb(null, pkg)
     }
 
