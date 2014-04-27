@@ -11,10 +11,7 @@ function readJson(file, cb) {
   })
 }
 
-var seen = {}
-
 module.exports = function (module, vrange, opts, cb) {
-
   if(!semver.validRange(vrange))
     return cb()
 
@@ -24,35 +21,32 @@ module.exports = function (module, vrange, opts, cb) {
     if(err) return cb()
 
     pull(
-      pull.values(Object.keys(doc.versions).sort(function (a, b) {
-        return semver.compareLoose(a, b) * -1
-      })),
+      pull.values(
+        Object.keys(doc.versions)
+        .sort(semver.compareLoose)
+        .reverse()
+      ),
       pull.asyncMap(function (version, cb) {
         var hash = doc.versions[version].dist.shasum
 
-//        var filename = path.join(opts.dbPath, 'blobs', hash.substring(0, 2), hash.substring(2))
-//        fs.stat(filename, function (err, stat) {
-//          if(err) cb()
-//          else    cb(null, doc.versions[version])
-//        })
+        var filename = path.join(
+                        opts.dbPath, 'blobs',
+                        hash.substring(0, 2),
+                        hash.substring(2)
+                      )
 
-        var dirname = path.join(opts.dbPath, 'blobs', hash.substring(0, 2))
-        if(seen[hash]) return cb(null, doc.versions[version])
-        fs.readdir(dirname, function (err, ls) {
-          if(err) return cb()
-          ls.forEach(function (hash) {
-            seen[hash] = true
-          })
-          cb(null, seen[hash] ? doc.versions[version] : null)
+        fs.stat(filename, function (err, stat) {
+          if(err) cb()
+          else    cb(null, doc.versions[version])
         })
 
       }),
       pull.filter(),
-      pull.take(1),
-      pull.collect(function (err, ary) {
-        if(err) return cb(err)
-        cb(null, ary[1])
-      })
+      pull.take(function (item) {
+        cb(null, item)
+        return false
+      }),
+      pull.drain()
     )
   })
 }
