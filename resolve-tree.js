@@ -33,6 +33,15 @@ function niceError(err, parent, name, range) {
   return err
 }
 
+function merge (a, b) {
+  var c = {}
+  for(var k in a)
+    c[k] = a[k]
+  for(var k in b)
+    c[k] = b[k]
+  return c
+}
+
 var unresolved = {}
 
 function createResolve (resolvePackage) {
@@ -48,19 +57,28 @@ function createResolve (resolvePackage) {
 
     if (! module) return cb(null, {})
 
+    //this is the root package - if we are resolving from a package.json
+    //we should just use that, instead of calling resolve pkg.
+    var root
+
     resolvePackage(module.name, module.version, opts, function (err, pkg) {
       if(err) return cb(err)
-   
-      var root = pkg
+      tree(pkg)
+    })
 
+    function tree (root) {
       if(opts.available) {
         root.parent = {tree: opts.available}
       }
-
       pull(cat([
-        pull.values([pkg]),
-        pt.depthFirst(pkg, function (pkg) {
-          var deps = pkg.dependencies || {}
+        pull.values([root]),
+        pt.depthFirst(root, function (pkg) {
+          var deps = (
+            opts.dev && pkg === root
+          ? merge(pkg.devDependencies, pkg.dependencies)
+          : pkg.dependencies
+          ) || {}
+
           pkg.tree = {}
           return pull(
             pull.values(Object.keys(deps)),
@@ -88,10 +106,9 @@ function createResolve (resolvePackage) {
         })
       ]),
       pull.drain(null, function (err) {
-        cb(err, clean(pkg))
+        cb(err, clean(root))
       }))
-    })
-  
+    }
   }
 
   //install non-conflicting modules as low in the tree as possible.
