@@ -19,7 +19,7 @@ module.exports = function (module, vrange, opts, cb) {
 
   readJson(path.join(cache, module, '.cache.json'), function (err, doc) {
     if(err) return cb()
-
+    var found = false
     pull(
       pull.values(
         Object.keys(doc.versions)
@@ -44,12 +44,19 @@ module.exports = function (module, vrange, opts, cb) {
         })
 
       }),
-      pull.filter(),
+      pull.filter(function (pkg) {
+        if(!pkg) return
+        return semver.satisfies(pkg.version, vrange)
+      }),
       pull.take(function (item) {
+        found = true
         cb(null, item)
         return false
       }),
-      pull.drain()
+      pull.drain(null, function (err) {
+        if(!found)
+          cb(new Error('not found: ' + module + '@' + vrange))
+      })
     )
   })
 }
