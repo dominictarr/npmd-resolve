@@ -42,12 +42,31 @@ npmd-resolve browserify --online | npmd-install
 npmd-resolve module@ver,...   # resolve specific modules
 npmd-resolve < package.json   # resolve all deps for this package.json
 npmd-resolve                  # resolve all deps for current directory
+
+# options
+
+  --greedy                    # make tree as flat as possible.
+  --maxTimestamp ISO_TIME     # only resolve modules publish before ISO_TIME
+  --override module@version:new_version
+                              # always resolve instances of {module} that would accept
+                              # {version} with {new_version} instead. useful for testing.
 ```
 ## greedy mode
 
 If `{greedy: true}` is enabled,
 resolve will build a dependency tree that is as flat as possible, this will remove a lot of duplication.
 It's not optimal, but is still much less duplicaty than a default npm install.
+
+
+
+## maxTimestamp
+
+If `{maxTimestamp: isoDateString}` is provided, npmd-resolve will ignore modules published after that time.
+This is only possible for modules in the registry, but assuming that npm's clock only goes forward,
+and that module refered to by a url do not mutate (best practice: include commit hash in git urls)
+then this option should allow you to resolve deterministic dependency trees.
+
+
 
 ## resolve strategies
 
