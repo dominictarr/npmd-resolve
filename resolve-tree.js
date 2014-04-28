@@ -35,6 +35,8 @@ function niceError(err, parent, name, range) {
 
 function merge (a, b) {
   var c = {}
+  a = a || {}
+  b = b || {}
   for(var k in a)
     c[k] = a[k]
   for(var k in b)
@@ -59,7 +61,7 @@ function createResolve (resolvePackage) {
       pkg.parent.tree[pkg.name] = pkg
     }
 
-    if (! module) return cb(null, {})
+    if(!module) return cb(null, {})
 
     //this is the root package - if we are resolving from a package.json
     //we should just use that, instead of calling resolve pkg.
@@ -79,11 +81,11 @@ function createResolve (resolvePackage) {
       pull(cat([
         pull.values([root]),
         pt.depthFirst(root, function (pkg) {
-          var deps = (
-            opts.dev && pkg === root
-          ? merge(pkg.devDependencies, pkg.dependencies)
-          : pkg.dependencies
-          ) || {}
+          var deps = pkg.dependencies || {}
+
+          //merge deps and dev deps if this is the root module and we are in --dev mode
+          if(opts.dev && pkg === root)
+            deps = pkg.dependencies = merge(pkg.devDependencies, deps)
 
           pkg.tree = {}
           return pull(
