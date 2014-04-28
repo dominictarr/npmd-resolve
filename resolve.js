@@ -1,5 +1,7 @@
 var online = require('./online')
 var offline = require('./offline')
+var override = require('./override')
+
 var path = require('path')
 
 function cascade(methods) {
@@ -19,7 +21,7 @@ function cascade(methods) {
 module.exports = function (cache, config) {
   config.dbPath = (config.dbPath || path.join(process.env.HOME, '.npmd'))
 
-  return cascade([
+  return override(cascade([
     function (m, v, opts, cb) {
       if(opts.online === false || opts.offline)
         return offline(m, v, opts, cb)
@@ -36,7 +38,7 @@ module.exports = function (cache, config) {
     function (m, v, _, cb) {
       cb(new Error('could not resolve ' + m + '@' + v))
     }
-  ])
+  ]))
 }
 
 if(!module.parent) {
