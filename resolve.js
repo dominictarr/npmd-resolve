@@ -35,8 +35,10 @@ module.exports = function (cache, config) {
       })
     },
     cache.resolve,
-    function (m, v, _, cb) {
-      cb(new Error('could not resolve ' + m + '@' + v))
+    function (m, v, opts, cb) {
+      cb(new Error(
+        'could not resolve ' + m + '@' + v
+         + (opts.maxTimestamp ? '\n  (published before: ' + opts.maxTimestamp + ')' : '')))
     }
   ]))
 }

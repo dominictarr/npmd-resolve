@@ -86,21 +86,24 @@ module.exports = function (module, vrange, opts, cb) {
       // and we didn't actually *fetch* anything
       // maybe it's only just been published.
       // So, it might be a good idea to fetch that again
-      // enabled by --refetch
+      // enabled by --refetch ?
       // need to test how often I actually run into this problem.
       // ********************
 
       // ********************
-      // TODO: if --offline then filter to max satisfying version
-      // that is available in cache.
-      // do this by selecting the max satisifying version,
-      // then checking it's available - if not repeat.
-      // filter by satisfies, sort by order,
-      // then take the first one that cache.has(hash, cb) is true for.
-      // -- nah, better idea is make this a separate resolution strategy.
+      // filter modules by max publish timestamp
+      // this allows you to resolve a module as it would have resolved
+      // at a given point backwards in time.
+      // the intended use of this is mainly to make it possible to test
+      // npmd-resolve and have the output be deterministic.
       // ********************
 
       var versions = Object.keys(json.versions)
+      if(opts.maxTimestamp)
+        versions = versions.filter(function (v) {
+          return json.time[v] < opts.maxTimestamp
+        })
+
       var ver = semver.maxSatisfying(versions, vrange, true)
       if(!ver) {
         if(!fetched && opts.refetch) return fetch()

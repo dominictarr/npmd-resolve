@@ -20,12 +20,17 @@ module.exports = function (module, vrange, opts, cb) {
   readJson(path.join(cache, module, '.cache.json'), function (err, doc) {
     if(err) return cb()
     var found = false
+    var versions = Object.keys(doc.versions)
+                    .sort(semver.compareLoose)
+                    .reverse()
+
+    if(opts.maxTimestamp)
+      versions = versions.filter(function (v) {
+        return doc.time[v] < opts.maxTimestamp
+      })
+
     pull(
-      pull.values(
-        Object.keys(doc.versions)
-        .sort(semver.compareLoose)
-        .reverse()
-      ),
+      pull.values(versions),
       pull.asyncMap(function (version, cb) {
         var hash = doc.versions[version].dist.shasum
 
@@ -55,7 +60,12 @@ module.exports = function (module, vrange, opts, cb) {
       }),
       pull.drain(null, function (err) {
         if(!found)
-          cb(new Error('not found: ' + module + '@' + vrange))
+          cb(new Error('not found: ' + module + '@' + vrange
+            + ( opts.maxTimestamp
+              ? '\n  (published before: ' + opts.maxTimestamp + ')'
+              : '')
+          ))
+
       })
     )
   })
