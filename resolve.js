@@ -1,5 +1,6 @@
 var online = require('./online')
 var offline = require('./offline')
+var github = require('./github')
 var override = require('./override')
 
 var path = require('path')
@@ -34,6 +35,7 @@ module.exports = function (cache, config) {
         cb(err, pkg)
       })
     },
+    github,
     cache.resolve,
     function (m, v, opts, cb) {
       cb(new Error(
