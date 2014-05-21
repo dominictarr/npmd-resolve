@@ -22,10 +22,17 @@ var DAY = 24*HOUR
 
 module.exports = function (module, vrange, opts, cb) {
   var headers = {}
+  var auth
   var registry = opts.registry || 'https://registry.npmjs.org'
   var cache = opts.cache || path.join(process.env.HOME, '.npm')
   var u = url.resolve(registry, module)
   var cachedfile = path.join(cache, module, '.cache.json')
+
+  if (opts['always-auth']) {
+    var creds = Buffer(opts['_auth'], 'base64').toString()
+    var segs = creds.split(':')
+    auth = { user: segs[0], pass: segs[1] }
+  }
 
   //only resolve module@semver (NOT urls - leave that to npmd-cache)
 
@@ -53,7 +60,9 @@ module.exports = function (module, vrange, opts, cb) {
 
     function fetch () {
       fetched = true
-      request({url: u, headers: headers}, function (err, res, data) {
+      request({
+        url: u, headers: headers, auth: auth
+      }, function (err, res, data) {
         if(err) return cb(err)
         console.error(''+res.statusCode, u)
         //if the file was still current - update mtime, so will hit cache next time.
