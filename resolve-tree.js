@@ -16,6 +16,8 @@ function check(pkg, name, range) {
 
 function fixModule (module) {
   if('string' === typeof module) {
+  if(/\//.test(module)) // it's a url
+    return {version: module}
   var parts = module.split('@')
     return {name: parts.shift(), version: parts.shift() || '*'}
   }
@@ -46,6 +48,18 @@ function merge (a, b) {
 
 function isPackage(pkg) {
   return pkg.name && pkg.version && (pkg.dependencies || pkg.devDependencies)
+}
+
+function has(deps, module, vrange) {
+  if(!deps || !deps[module]) return false
+  return semver.satisfies(deps[module].version, vrange, true)
+}
+
+function hasDep(pkg, module, vrange) {
+  if(pkg.tree && has(pkg.tree, module, vrange)) return true
+  else if(pkg.parent)
+    return hasDep(pkg.parent, module, vrange)
+  return false
 }
 
 var unresolved = {}
@@ -83,6 +97,7 @@ function createResolve (resolvePackage) {
         pt.depthFirst(root, function (pkg) {
           var deps = merge(pkg.dependencies || {}, pkg.optionalDependencies)
 
+
           //merge deps and dev deps if this is the root module and we are in --dev mode
           if(opts.dev && pkg === root)
             deps = pkg.dependencies = merge(pkg.devDependencies, deps)
@@ -94,7 +109,7 @@ function createResolve (resolvePackage) {
             //but it's not the bottle neck.
             paramap(function (name, cb) {
               //check if there is already a module that resolves this...
-
+              if(hasDep(pkg, name, deps[name])) return cb()
               //filter out versions that we already have.
               //if(opts.check !== false && check(pkg, name, deps[name]))
               //  return cb()
