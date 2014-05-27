@@ -19,8 +19,6 @@ function cascade(methods) {
 }
 
 module.exports = function (cache, config) {
-  config.dbPath = (config.dbPath || path.join(process.env.HOME, '.npmd'))
-
   return override(cascade([
     function (m, v, opts, cb) {
       if(opts.online === false || opts.offline)
