@@ -28,14 +28,12 @@ module.exports = function (fallback) {
       var or = {}
       opts.override.split(',').map(function (e) {
         var parts = e.split(/@|:/)
-        console.log(parts)
         var module = parts.shift()
         var to = parts.pop()
         var version = parts.shift()
         or[module] = {version: version || '*', target: to}
       })
       opts.override = or
-      console.error(opts.override)
     }
 
     //falback if there is no override for this module.
