@@ -28,7 +28,7 @@ module.exports = function (module, vrange, opts, cb) {
 
   //only resolve module@semver (NOT urls - leave that to npmd-cache)
 
-  if(!semver.validRange(vrange))
+  if(!semver.validRange(vrange, true))
     return cb()
 
   var u = url.resolve(registry, module)

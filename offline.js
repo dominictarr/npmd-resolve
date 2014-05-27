@@ -12,7 +12,7 @@ function readJson(file, cb) {
 }
 
 module.exports = function (module, vrange, opts, cb) {
-  if(!semver.validRange(vrange))
+  if(!semver.validRange(vrange, true))
     return cb()
 
   var cache = opts.cache || path.join(process.env.HOME, '.npm')

@@ -44,7 +44,7 @@ module.exports = function (fallback) {
 
     var r = opts.override[module]
 
-    if(semver.validRange(vrange) && semver.satisfies(r.version, vrange)) {
+    if(semver.validRange(vrange, true) && semver.satisfies(r.version, vrange, true)) {
       //if the entire package.json was passed in...
       //that is all that we need to resolve this.
       if(isPackage(r)) {
