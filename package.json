@@ -16,7 +16,7 @@
     "request": "~2.36.0",
     "pull-fs": "~1.1.3",
     "npmd-tree": ">=3.3.4 <4",
-    "pull-paramap": "1.0.3",
+    "pull-paramap": "~1.0.5",
     "pull-traverse": "~1.0.1",
     "mkdirp": "~0.3.5",
     "get-deps": "~2.1.0",
@@ -27,5 +27,8 @@
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "tape": "~2.13.1"
+  }
 }
