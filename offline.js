@@ -12,29 +12,38 @@ function readJson(file, cb) {
 }
 
 module.exports = function (module, vrange, opts, cb) {
-  if(!semver.validRange(vrange, true))
+  if(/\//.test(vrange))
     return cb()
 
   var cache = opts.cache || path.join(process.env.HOME, '.npm')
 
   readJson(path.join(cache, module, '.cache.json'), function (err, doc) {
     if(err) return cb()
+
+    if(!data.versions)
+      return cb(new Error('package document invalid'))
+
+    // if the version is a tag,
+    // set the version to the tagged version
+    if(json['dist-tags'] && json['dist-tags'][vrange])
+      vrange = json['dist-tags'][vrange]
+
     var found = false
-    var versions = Object.keys(doc.versions)
+    var versions = Object.keys(json.versions)
                     .sort(semver.compareLoose)
                     .reverse()
 
     if(opts.maxTimestamp)
       versions = versions.filter(function (v) {
-        return doc.time[v] < opts.maxTimestamp
+        return json.time[v] < opts.maxTimestamp
       })
 
     pull(
       pull.values(versions),
       pull.asyncMap(function (version, cb) {
-        var hash = doc.versions[version].dist.shasum
+        var hash = json.versions[version].dist.shasum
 
-        var pkg = doc.versions[version]
+        var pkg = json.versions[version]
         pkg.shasum = pkg.dist.shasum
 
         var filename = path.join(

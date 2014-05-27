@@ -28,8 +28,8 @@ module.exports = function (module, vrange, opts, cb) {
 
   //only resolve module@semver (NOT urls - leave that to npmd-cache)
 
-  if(!semver.validRange(vrange, true))
-    return cb()
+  //it's a url/other protocol
+  if(/\//.test(vrange)) return cb()
 
   var u = url.resolve(registry, module)
   var cachedfile = path.join(cache, module, '.cache.json')
@@ -64,16 +64,25 @@ module.exports = function (module, vrange, opts, cb) {
       request({
         url: u, headers: headers, auth: auth
       }, function (err, res, data) {
+
         if(err) return cb(err)
         console.error(''+res.statusCode, u)
         //if the file was still current - update mtime, so will hit cache next time.
+
         if(res.statusCode === 304)
           return fs.utimes(cachedfile, nowish, nowish, function () {
             next(null, json)
           })
 
+        if(res.statusCode >= 400) {
+          return cb(new Error(res.statusCode + ' when requesting:' + module + '@' + vrange))
+        }
+
         try { data = JSON.parse(data.toString('utf-8')) } catch (err) { return cb(err) }
         data._etag = res.headers.etag
+
+        if(!data.versions)
+          return cb(new Error('package document invalid'))
 
         //save the newly downloaded doc.
         mkdirp(path.join(cache, module), function (err) {
@@ -91,6 +100,11 @@ module.exports = function (module, vrange, opts, cb) {
     function next (err, json) {
       if(err) return cb(verError || err)
 
+      // if the version is a tag,
+      // set the version to the tagged version
+      if(json['dist-tags'] && json['dist-tags'][vrange])
+        vrange = json['dist-tags'][vrange]
+
       // ********************
       // If there was no satisfying version,
       // and we didn't actually *fetch* anything
@@ -107,6 +121,7 @@ module.exports = function (module, vrange, opts, cb) {
       // the intended use of this is mainly to make it possible to test
       // npmd-resolve and have the output be deterministic.
       // ********************
+
 
       var versions = Object.keys(json.versions)
       if(opts.maxTimestamp)
