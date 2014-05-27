@@ -25,6 +25,12 @@ module.exports = function (module, vrange, opts, cb) {
   var auth
   var registry = opts.registry || 'https://registry.npmjs.org'
   var cache = opts.cache || path.join(process.env.HOME, '.npm')
+
+  //only resolve module@semver (NOT urls - leave that to npmd-cache)
+
+  if(!semver.validRange(vrange))
+    return cb()
+
   var u = url.resolve(registry, module)
   var cachedfile = path.join(cache, module, '.cache.json')
 
@@ -33,11 +39,6 @@ module.exports = function (module, vrange, opts, cb) {
     var segs = creds.split(':')
     auth = { user: segs[0], pass: segs[1] }
   }
-
-  //only resolve module@semver (NOT urls - leave that to npmd-cache)
-
-  if(!semver.validRange(vrange))
-    return cb()
 
   var nowish = new Date()
   var fetched = false
