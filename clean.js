@@ -1,4 +1,4 @@
-var fields = ['name', 'version', 'from', 'gypfile', 'shasum']
+var fields = ['name', 'version', 'from', 'gypfile', 'shasum', 'tarball']
 
 module.exports = function clean (pkg) {
   var deps = pkg.dependencies

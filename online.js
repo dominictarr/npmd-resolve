@@ -4,7 +4,7 @@ var path = require('path')
 var url = require('url')
 var semver = require('semver')
 var mkdirp = require('mkdirp')
-
+var npmUrl = require('npmd-url')
 function readJson(file, cb) {
   fs.stat(file, function (err, stat) {
     if(err) return cb(err)
@@ -139,20 +139,7 @@ module.exports = function (module, vrange, opts, cb) {
       }
       var pkg = json.versions[ver]
       pkg.shasum = pkg.shasum || pkg.dist.shasum
-
-      // ********************
-      // There are some modules (at least esprima-fb@3001.1.0-dev-harmony-fb)
-      // where the url does not match the version. it's probably only in cases
-      // where the semver is invalid. I'm gonna include this ugly work-around.
-      // because fixing it in the database is out of my control...
-
-      var from = (
-        registry + '/' + pkg.name + '/-/' +
-        pkg.name + '-' + pkg.version + '.tgz'
-      ).replace(/^https/, 'http')
-      if(pkg.dist.tarball.replace(/^https/, 'http') !== from)
-        pkg.from = pkg.dist.tarball.replace(/^http:/, 'https:')
-      // ********************
+      pkg.tarball = pkg.dist.tarball
 
       cb(null, pkg)
     }

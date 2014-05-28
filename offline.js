@@ -45,6 +45,7 @@ module.exports = function (module, vrange, opts, cb) {
 
         var pkg = json.versions[version]
         pkg.shasum = pkg.dist.shasum
+        pkg.tarball = pkg.dist.tarball
 
         var filename = path.join(
                         opts.dbPath, 'blobs',
