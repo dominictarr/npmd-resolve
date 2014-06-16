@@ -1,3 +1,4 @@
+'use strict';
 var semver = require('semver')
 var fs = require('fs')
 var path = require('path')
@@ -17,10 +18,10 @@ module.exports = function (module, vrange, opts, cb) {
 
   var cache = opts.cache || path.join(process.env.HOME, '.npm')
 
-  readJson(path.join(cache, module, '.cache.json'), function (err, doc) {
+  readJson(path.join(cache, module, '.cache.json'), function (err, json) {
     if(err) return cb()
 
-    if(!data.versions)
+    if(!json.versions)
       return cb(new Error('package document invalid'))
 
     // if the version is a tag,
