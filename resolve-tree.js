@@ -16,8 +16,6 @@ function check(pkg, name, range) {
 
 function fixModule (module) {
   if('string' === typeof module) {
-  if(/\//.test(module)) // it's a url
-    return {version: module}
   var parts = module.split('@')
     return {name: parts.shift(), version: parts.shift() || '*'}
   }

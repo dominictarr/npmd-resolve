@@ -59,3 +59,13 @@ tape('resolves old range', function (t) {
     t.end()
   })
 })
+
+tape('resolves urls', function (t) {
+  var resolve = createResolve(function (m, v, opts, cb) {
+    t.equal(m, 'dominictarr/npmd-resolve#1.0.2')
+    t.equal(v, '*')
+    t.end()
+  })
+
+  resolve('dominictarr/npmd-resolve#1.0.2')
+})
