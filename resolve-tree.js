@@ -24,7 +24,7 @@ function fixModule (module) {
 
 function niceError(err, parent, name, range) {
   if(!err) return
-  err.message = 'package:'
+  err.message = 'package: '
   + parent.name + '@' + parent.version
   + ' could not resolve '
   + name + '@' + range
