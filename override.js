@@ -65,6 +65,9 @@ module.exports = function (fallback) {
         })
       }
     }
-
+    else
+      //if the override version does not satisfy this version
+      //fallback to the default resolution.
+      fallback(module, vrange, opts, cb)
   }
 }
