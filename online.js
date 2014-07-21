@@ -5,6 +5,8 @@ var url = require('url')
 var semver = require('semver')
 var mkdirp = require('mkdirp')
 var npmUrl = require('npmd-url')
+var pull   = require('pull-stream')
+
 function readJson(file, cb) {
   fs.stat(file, function (err, stat) {
     if(err) return cb(err)
@@ -16,9 +18,11 @@ function readJson(file, cb) {
   })
 }
 
-var MIN = 60*1000
+var chooser = require('./choose-from-registry')
+
+var MIN  = 60*1000
 var HOUR = 60*MIN
-var DAY = 24*HOUR
+var DAY  = 24*HOUR
 
 module.exports = function (module, vrange, opts, cb) {
   var headers = {}
@@ -97,51 +101,13 @@ module.exports = function (module, vrange, opts, cb) {
       })
     }
 
-    function next (err, json) {
+    function next (err, doc) {
       if(err) return cb(verError || err)
-
-      // if the version is a tag,
-      // set the version to the tagged version
-      if(json['dist-tags'] && json['dist-tags'][vrange])
-        vrange = json['dist-tags'][vrange]
-
-      // ********************
-      // If there was no satisfying version,
-      // and we didn't actually *fetch* anything
-      // maybe it's only just been published.
-      // So, it might be a good idea to fetch that again
-      // enabled by --refetch ?
-      // need to test how often I actually run into this problem.
-      // ********************
-
-      // ********************
-      // filter modules by max publish timestamp
-      // this allows you to resolve a module as it would have resolved
-      // at a given point backwards in time.
-      // the intended use of this is mainly to make it possible to test
-      // npmd-resolve and have the output be deterministic.
-      // ********************
-
-
-      var versions = Object.keys(json.versions)
-      if(opts.maxTimestamp)
-        versions = versions.filter(function (v) {
-          return json.time[v] < opts.maxTimestamp
-        })
-
-      var ver = semver.maxSatisfying(versions, vrange, true)
-      if(!ver) {
-        if(!fetched && opts.refetch) return fetch()
-        return cb(new Error('no version satisfying:' +
-          JSON.stringify(vrange) +
-          ' expected one of ' + JSON.stringify(versions)
-        ))
-      }
-      var pkg = json.versions[ver]
-      pkg.shasum = pkg.shasum || pkg.dist.shasum
-      pkg.tarball = pkg.dist.tarball
-
-      cb(null, pkg)
+      //read a singe value from the stream.
+      pull(
+        chooser(doc, vrange, opts),
+        pull.find(Boolean, cb)
+      )
     }
 
     // if the cache was too old, or missing,
