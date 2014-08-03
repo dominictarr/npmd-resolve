@@ -9,8 +9,9 @@ module.exports = function (db, cache, config) {
 
 if(!module.parent) {
   var config = require('npmd-config')
+  var cache = require('npmd-cache')(null, config)
   var args = config._
-  var resolvePackage = createResolvePackage({resolve: function (m,v,o,cb) { cb() }}, config)
+  var resolvePackage = createResolvePackage(cache, config)
   var resolve = createResolve(resolvePackage)
   var getDeps = require('get-deps')
   if(config.version) {
