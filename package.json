@@ -21,7 +21,8 @@
     "mkdirp": "~0.3.5",
     "get-deps": "~2.1.0",
     "npmd-config": "~1.0.10",
-    "npmd-url": "~0.1.1"
+    "npmd-url": "~0.1.1",
+    "npmd-cache": "~4.3.0"
   },
   "bin": "./index.js",
   "scripts": {
