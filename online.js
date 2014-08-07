@@ -1,3 +1,4 @@
+'use strict';
 var request = require('request')
 var fs = require('fs')
 var path = require('path')
@@ -102,7 +103,7 @@ module.exports = function (module, vrange, opts, cb) {
     }
 
     function next (err, doc) {
-      if(err) return cb(verError || err)
+      if(err) return cb(err)
       //read a singe value from the stream.
       pull(
         chooser(doc, vrange, opts),
