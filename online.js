@@ -55,7 +55,7 @@ module.exports = function (module, vrange, opts, cb) {
     if(json) {
       //if the file is very new,
 
-      if(+stat.mtime > nowish - (opts.minAge || 10*MIN))
+      if(!opts.freshen && +stat.mtime > nowish - (opts.minAge || 10*MIN))
         return next(null, json)
 
       //if the file is not old, carry on and use it.
