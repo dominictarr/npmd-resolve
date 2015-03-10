@@ -93,8 +93,10 @@ function createResolve (resolvePackage) {
       pull(cat([
         pull.values([root]),
         pt.depthFirst(root, function (pkg) {
-          var deps = merge(pkg.dependencies || {}, pkg.optionalDependencies)
-
+          var deps = merge(
+            pkg.dependencies || {},
+            opts.optional === false ? {} : opts.pkg.optionalDependencies
+          )
 
           //merge deps and dev deps if this is the root module and we are in --dev mode
           if(opts.dev && pkg === root)
