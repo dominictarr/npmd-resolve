@@ -19,10 +19,11 @@
     "pull-paramap": "~1.0.5",
     "pull-traverse": "~1.0.1",
     "mkdirp": "~0.3.5",
-    "get-deps": "~2.1.0",
+    "get-deps": "~2.2.0",
     "npmd-config": "~1.0.10",
     "npmd-url": "~0.1.1",
-    "npmd-cache": "~4.3.0"
+    "npmd-cache": "~4.3.0",
+    "minimist": "~1.1.0"
   },
   "bin": "./index.js",
   "scripts": {
