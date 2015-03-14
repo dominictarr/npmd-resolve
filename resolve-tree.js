@@ -95,7 +95,7 @@ function createResolve (resolvePackage) {
         pt.depthFirst(root, function (pkg) {
           var deps = merge(
             pkg.dependencies || {},
-            opts.optional === false ? {} : opts.pkg.optionalDependencies
+            opts.optional === false ? {} : pkg.optionalDependencies
           )
 
           //merge deps and dev deps if this is the root module and we are in --dev mode
