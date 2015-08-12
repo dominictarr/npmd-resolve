@@ -2,8 +2,9 @@ var pull    = require('pull-stream')
 var pt      = require('pull-traverse')
 var semver  = require('semver')
 var cat     = require('pull-cat')
-var clean    = require('./clean')
-var paramap  = require('pull-paramap')
+var clean   = require('./clean')
+var paramap = require('pull-paramap')
+var Local   = require('./local')
 
 module.exports = createResolve
 
@@ -54,10 +55,11 @@ function has(deps, module, vrange) {
 }
 
 function hasDep(pkg, module, vrange) {
-  if(pkg.tree && has(pkg.tree, module, vrange)) return true
+  if(pkg.tree && pkg.tree[module]) return pkg.tree[module]
+//  if(pkg.tree && has(pkg.tree, module, vrange)) return pkg.tree[module]
   else if(pkg.parent)
     return hasDep(pkg.parent, module, vrange)
-  return false
+  return null
 }
 
 var unresolved = {}
@@ -65,7 +67,7 @@ var unresolved = {}
 function createResolve (resolvePackage) {
 
   function resolveTree (module, opts, cb) {
-
+    var local = Local(opts)
     module = fixModule(module)
 
     var filter = opts.filter || function (pkg, root) {
@@ -108,16 +110,27 @@ function createResolve (resolvePackage) {
             //this could be parallel,
             //but it's not the bottle neck.
             paramap(function (name, cb) {
-              //check if there is already a module that resolves this...
-              if(hasDep(pkg, name, deps[name])) return cb()
-              //filter out versions that we already have.
-              //if(opts.check !== false && check(pkg, name, deps[name]))
-              //  return cb()
-              unresolved[name + '@' + deps[name]] = true
-              resolvePackage(name, deps[name], opts, function (err, _pkg) {
-                delete unresolved[name + '@' + deps[name]]
+              //check if a usable module is already in the tree.
+              //if a module was found, but did not conflict then use that.
+              var _pkg = hasDep(pkg, name)
+              if(_pkg && semver.satisfies(_pkg.version, deps[name]))
+                return cb()
+              //check if this module is already installed
+              local(name, opts, function (_, _pkg) {
+                if(_pkg) {
+                  root.tree[_pkg.name] = _pkg
+                  if(semver.satisfies(_pkg.version, deps[name]))
+                    return cb()
+                }
+                //filter out versions that we already have.
+                //if(opts.check !== false && check(pkg, name, deps[name]))
+                //  return cb()
+                unresolved[name + '@' + deps[name]] = true
+                resolvePackage(name, deps[name], opts, function (err, _pkg) {
+                  delete unresolved[name + '@' + deps[name]]
 
-                cb(niceError(err, pkg, name, deps[name]), _pkg)
+                  cb(niceError(err, pkg, name, deps[name]), _pkg)
+                })
               })
             }),
             pull.filter(),

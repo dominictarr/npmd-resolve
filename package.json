@@ -25,13 +25,15 @@
     "npmd-cache": "~4.3.0",
     "minimist": "~1.1.0"
   },
-  "bin": "./index.js",
+  "bin": "./bin.js",
   "scripts": {
+    "prepublish": "npm ls && npm test && noderify index.js > bin.js",
     "test": "set -e; for t in test/*.js; do node $t; done"
   },
   "author": "Dominic Tarr <dominic.tarr@gmail.com> (http://dominictarr.com)",
   "license": "MIT",
   "devDependencies": {
-    "tape": "~2.13.1"
+    "tape": "~2.13.1",
+    "noderify": "~0.1.4"
   }
 }

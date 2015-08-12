@@ -36,6 +36,7 @@ if(!module.parent) {
     resolve(args, config, function (err, tree) {
       if(err) throw err
       console.log(JSON.stringify(tree, null, 2))
+      process.exit(0)
     })
   }
 }
