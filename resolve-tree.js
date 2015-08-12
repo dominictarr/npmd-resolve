@@ -118,6 +118,7 @@ function createResolve (resolvePackage) {
               //check if this module is already installed
               local(name, opts, function (_, _pkg) {
                 if(_pkg) {
+                  _pkg.installed = true
                   root.tree[_pkg.name] = _pkg
                   if(semver.satisfies(_pkg.version, deps[name]))
                     return cb()
