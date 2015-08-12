@@ -9,8 +9,12 @@ module.exports = function clean (pkg) {
       delete pkg[k]
 
   for(var k in _deps) {
-    _deps[k].from = _deps[k].from || deps[k]
-    clean(_deps[k])
+    if(!_deps[k].shasum)
+      delete _deps[k]
+    else {
+      _deps[k].from = _deps[k].from || deps[k]
+      clean(_deps[k])
+    }
   }
 
   pkg.dependencies = _deps
